@@ -1,10 +1,8 @@
-*.iml
 .kotlin
 .gradle
 **/build/
 xcuserdata
 !src/**/build/
-local.properties
 .idea
 .DS_Store
 captures
@@ -64,3 +62,4 @@ iosApp/*.xcodeproj/project.xcworkspace/xcuserdata/
 *.ipa
 DerivedData/
 .build/
+.artifacts/
