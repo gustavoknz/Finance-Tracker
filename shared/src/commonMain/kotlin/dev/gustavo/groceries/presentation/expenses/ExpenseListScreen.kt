@@ -1,4 +1,4 @@
-package dev.gustavo.groceries.presentation.products
+package dev.gustavo.groceries.presentation.expenses
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,31 +11,31 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
-import dev.gustavo.groceries.domain.model.Product
+import dev.gustavo.groceries.domain.model.Expense
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
 
-class ProductListScreen : Screen {
-    @OptIn(KoinExperimentalAPI::class)
+class ExpenseListScreen : Screen {
+    @OptIn(KoinExperimentalAPI::class, ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
-        val viewModel = koinViewModel<ProductListViewModel>()
+        val viewModel = koinViewModel<ExpenseListViewModel>()
         val state by viewModel.state.collectAsState()
 
         Scaffold(
             topBar = {
-                TopAppBar(title = { Text("Grocery List") })
+                TopAppBar(title = { Text("Expense Tracker") })
             }
         ) { padding ->
             Box(modifier = Modifier.fillMaxSize().padding(padding)) {
                 when (val currentState = state) {
-                    is ProductListState.Loading -> {
+                    is ExpenseListState.Loading -> {
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                     }
-                    is ProductListState.Success -> {
-                        ProductList(currentState.products)
+                    is ExpenseListState.Success -> {
+                        ExpenseList(currentState.expenses)
                     }
-                    is ProductListState.Error -> {
+                    is ExpenseListState.Error -> {
                         Text(
                             text = currentState.message,
                             color = MaterialTheme.colorScheme.error,
@@ -48,27 +48,35 @@ class ProductListScreen : Screen {
     }
 
     @Composable
-    private fun ProductList(products: List<Product>) {
+    private fun ExpenseList(expenses: List<Expense>) {
         LazyColumn(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(products) { product ->
-                ProductItem(product)
+            items(expenses) { expense ->
+                ExpenseItem(expense)
             }
         }
     }
 
     @Composable
-    private fun ProductItem(product: Product) {
+    private fun ExpenseItem(expense: Expense) {
         Card(
             modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(text = product.name, style = MaterialTheme.typography.titleMedium)
-                Text(text = "$${product.price}", style = MaterialTheme.typography.bodyMedium)
-                Text(text = product.description, style = MaterialTheme.typography.bodySmall)
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = expense.category, style = MaterialTheme.typography.titleMedium)
+                    Text(text = expense.description, style = MaterialTheme.typography.bodySmall)
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(text = "${expense.amount} ${expense.currency}", style = MaterialTheme.typography.titleLarge)
+                    Text(text = expense.date, style = MaterialTheme.typography.labelSmall)
+                }
             }
         }
     }

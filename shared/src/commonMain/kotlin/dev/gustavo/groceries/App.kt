@@ -5,13 +5,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.transitions.SlideTransition
-import dev.gustavo.groceries.presentation.products.ProductListScreen
+import dev.gustavo.groceries.presentation.expenses.ExpenseListScreen
 
 @Composable
 @Preview
 fun App() {
     MaterialTheme {
-        Navigator(ProductListScreen()) { navigator ->
+        Navigator(ExpenseListScreen()) { navigator ->
             SlideTransition(navigator)
         }
     }
