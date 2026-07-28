@@ -22,11 +22,11 @@ dependencies {
 }
 
 android {
-    namespace = "dev.gustavo.groceries"
+    namespace = "dev.gustavo.finance"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "dev.gustavo.groceries"
+        applicationId = "dev.gustavo.finance"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1

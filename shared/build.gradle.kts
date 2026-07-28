@@ -20,7 +20,7 @@ kotlin {
     }
     
     android {
-       namespace = "dev.gustavo.groceries.shared"
+       namespace = "dev.gustavo.finance.shared"
        compileSdk = libs.versions.android.compileSdk.get().toInt()
        minSdk = libs.versions.android.minSdk.get().toInt()
     
