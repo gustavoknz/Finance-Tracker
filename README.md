@@ -1,31 +1,62 @@
-This is a Kotlin Multiplatform project targeting Android, iOS.
+# Finance Tracker - Kotlin Multiplatform
 
-* [/iosApp](./iosApp/iosApp) contains an iOS application. Even if you’re sharing your UI with Compose Multiplatform,
-  you need this entry point for your iOS app. This is also where you should add SwiftUI code for your project.
+A simple Finance Tracker application built with **Kotlin Multiplatform (KMP)** and **Compose Multiplatform**, targeting Android and iOS.
 
-* [/shared](./shared/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - [commonMain](./shared/src/commonMain/kotlin) is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    the [iosMain](./shared/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./shared/src/jvmMain/kotlin)
-    folder is the appropriate location.
+## 🚀 Features
 
-### Running the apps
+- **Expense Management**: List and track your daily expenses with category, description, and currency.
+- **Real-time Exchange Rates**: Integrated with the [Frankfurter API](https://api.frankfurter.dev/v1/latest) to fetch the latest currency conversion rates.
+- **Multi-platform UI**: Shared UI components using Compose Multiplatform.
+- **Navigation**: Fluid screen transitions using **Voyager**.
 
-Use the run configurations provided by the run widget in your IDE's toolbar. You can also use these commands and options:
+## 🏗️ Architecture & Best Practices
 
-- Android app: `./gradlew :androidApp:assembleDebug`
-- iOS app: open the [/iosApp](./iosApp) directory in Xcode and run it from there.
+The project follows **Clean Architecture** and **SOLID** principles to ensure maintainability and testability:
 
-### Running tests
+- **Domain Layer**: Contains business logic, entities (`Expense`, `ExchangeRate`), and repository interfaces.
+- **Data Layer**: Implements repository interfaces. Includes a **Remote Data Source** using **Ktor** for API calls and **Mock Repositories** for testing and previews.
+- **Presentation Layer**: Implements the UI using **Jetpack Compose**. Uses **ViewModel** (StateFlow) to manage UI state.
+- **Dependency Injection**: Powered by **Koin**, with dedicated modules for shared and platform-specific dependencies.
 
-Use the run button in your IDE's editor gutter, or run tests using Gradle tasks:
+## 🛠️ Tech Stack
 
-- Android tests: `./gradlew :shared:testAndroidHostTest`
-- iOS tests: `./gradlew :shared:iosSimulatorArm64Test`
+- **UI**: Compose Multiplatform
+- **DI**: Koin (Core, Compose, ViewModel)
+- **Networking**: Ktor Client
+- **Navigation**: Voyager
+- **Serialization**: Kotlinx Serialization
+- **Asynchronous**: Kotlin Coroutines & Flow
+
+## 📂 Project Structure
+
+* `/androidApp`: Android-specific entry point and configuration.
+* `/iosApp`: iOS-specific entry point (SwiftUI wrapper).
+* `/shared`: The core of the application where 100% of the logic and UI is shared.
+  * `commonMain`: Shared business logic and Compose UI.
+  * `androidMain` / `iosMain`: Platform-specific implementations (e.g., Koin platform modules).
+
+## 🖥️ Compose Previews
+
+The project includes fixed Compose Previews for screens that depend on Koin. We use `KoinApplication` in our `@Preview` functions to provide a mock environment, allowing the UI to render correctly in Android Studio.
+
+## 🏃 Running the apps
+
+### Android
+1. Open the project in Android Studio.
+2. Select the `androidApp` configuration.
+3. Click **Run**.
+Alternatively: `./gradlew :androidApp:assembleDebug`
+
+### iOS
+1. Open the `iosApp` directory in Xcode.
+2. Select a simulator or device.
+3. Click **Run**.
+
+## 🧪 Running tests
+
+- **Android**: `./gradlew :shared:testAndroidHostTest`
+- **iOS**: `./gradlew :shared:iosSimulatorArm64Test`
 
 ---
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+Built with ❤️ using [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html).
