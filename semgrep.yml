@@ -1,0 +1,7 @@
+# This is a basic Semgrep configuration file for Finance-Tracker.
+#
+# To run a complete scan using recommended community rules for Kotlin and Swift:
+# semgrep scan --config p/kotlin --config p/swift --config p/security-audit
+#
+# You can add custom rules here as needed.
+rules: []

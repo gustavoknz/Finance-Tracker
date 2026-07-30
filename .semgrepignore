@@ -1,0 +1,29 @@
+# Build artifacts
+**/build/
+**/out/
+**/.gradle/
+**/bin/
+**/obj/
+
+# IDE configurations
+**/.idea/
+**/.vscode/
+**/.settings/
+**/*.iml
+
+# Dependency directories
+**/node_modules/
+**/vendor/
+
+# iOS specific
+**/DerivedData/
+**/*.xcodeproj/
+**/*.xcworkspace/
+
+# Git
+**/.git/
+
+# Generated code
+**/generated/
+**/*.g.kt
+**/*.g.swift

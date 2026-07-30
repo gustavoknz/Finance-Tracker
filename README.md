@@ -57,6 +57,26 @@ Alternatively: `./gradlew :androidApp:assembleDebug`
 - **Android**: `./gradlew :shared:testAndroidHostTest`
 - **iOS**: `./gradlew :shared:iosSimulatorArm64Test`
 
+## 🛡️ Static Analysis (Semgrep)
+
+The project is integrated with **Semgrep** for security-focused static analysis across both Kotlin and Swift.
+
+### Installation
+```bash
+brew install semgrep
+```
+
+### Running Scans
+To run a complete scan using recommended community rules for Kotlin and Swift:
+```bash
+semgrep scan --config p/kotlin --config p/swift --config p/security-audit
+```
+
+To use the local configuration:
+```bash
+semgrep scan --config semgrep.yml
+```
+
 ---
 
 Built with ❤️ using [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html).
