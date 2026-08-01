@@ -1,18 +1,27 @@
-import UIKit
 import SwiftUI
-import Shared
+import UIKit
 
-struct ComposeView: UIViewControllerRepresentable {
-    func makeUIViewController(context: Self.Context) -> UIViewController {
-        MainViewControllerKt.MainViewController()
-    }
-
-    func updateUIViewController(_ uiViewController: UIViewController, context: Self.Context) {}
-}
+typealias RootViewControllerFactory = () -> UIViewController
 
 struct ContentView: View {
+    private let makeRootViewController: RootViewControllerFactory
+
+    init(makeRootViewController: @escaping RootViewControllerFactory) {
+        self.makeRootViewController = makeRootViewController
+    }
+
     var body: some View {
-        ComposeView()
+        RootViewControllerRepresentable(makeViewController: makeRootViewController)
             .ignoresSafeArea()
     }
+}
+
+private struct RootViewControllerRepresentable: UIViewControllerRepresentable {
+    let makeViewController: RootViewControllerFactory
+
+    func makeUIViewController(context: Context) -> UIViewController {
+        makeViewController()
+    }
+
+    func updateUIViewController(_ viewController: UIViewController, context: Context) {}
 }

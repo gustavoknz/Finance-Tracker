@@ -3,12 +3,26 @@ import Shared
 
 @main
 struct iOSApp: App {
+    private let dependencies: AppDependencies
+
     init() {
-        KoinKt.initKoin()
+        dependencies = AppDependencies()
+        dependencies.configure()
     }
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            dependencies.makeContentView()
         }
+    }
+}
+
+private struct AppDependencies {
+    func configure() {
+        KoinKt.doInitKoin()
+    }
+
+    func makeContentView() -> ContentView {
+        ContentView(makeRootViewController: MainViewControllerKt.MainViewController)
     }
 }
