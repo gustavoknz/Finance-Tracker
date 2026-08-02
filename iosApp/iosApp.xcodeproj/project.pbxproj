@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		4B1409448E9E089C1F852D0C /* KotlinProject.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KotlinProject.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4B1409448E9E089C1F852D0C /* Finance-Tracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Finance-Tracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -59,7 +59,7 @@
 		074EF3BF63C59777205F05B6 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				4B1409448E9E089C1F852D0C /* KotlinProject.app */,
+				4B1409448E9E089C1F852D0C /* Finance-Tracker.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -87,7 +87,7 @@
 			packageProductDependencies = (
 			);
 			productName = iosApp;
-			productReference = 4B1409448E9E089C1F852D0C /* KotlinProject.app */;
+			productReference = 4B1409448E9E089C1F852D0C /* Finance-Tracker.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
