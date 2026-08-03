@@ -1,11 +1,10 @@
-# Finance Tracker - Kotlin Multiplatform
+# Currency Tracker - Kotlin Multiplatform
 
-A simple Finance Tracker application built with **Kotlin Multiplatform (KMP)** and **Compose Multiplatform**, targeting Android and iOS.
+A simple Currency Tracker application built with **Kotlin Multiplatform (KMP)** and **Compose Multiplatform**, targeting Android and iOS.
 
 ## 🚀 Features
 
-- **Expense Management**: List and track your daily expenses with category, description, and currency.
-- **Real-time Exchange Rates**: Integrated with the [Frankfurter API](https://api.frankfurter.dev/v1/latest) to fetch the latest currency conversion rates.
+- **Real-time Exchange Rates**: Integrated with the [Frankfurter API](https://api.frankfurter.dev/v1/latest) to fetch the latest currency conversion rates from Euro to other global currencies.
 - **Multi-platform UI**: Shared UI components using Compose Multiplatform.
 - **Navigation**: Fluid screen transitions using **Voyager**.
 
@@ -13,8 +12,8 @@ A simple Finance Tracker application built with **Kotlin Multiplatform (KMP)** a
 
 The project follows **Clean Architecture** and **SOLID** principles to ensure maintainability and testability:
 
-- **Domain Layer**: Contains business logic, entities (`Expense`, `ExchangeRate`), and repository interfaces.
-- **Data Layer**: Implements repository interfaces. Includes a **Remote Data Source** using **Ktor** for API calls and **Mock Repositories** for testing and previews.
+- **Domain Layer**: Contains business logic, entities (`ExchangeRate`), and repository interfaces.
+- **Data Layer**: Implements repository interfaces. Includes a **Remote Data Source** using **Ktor** for API calls and Previews.
 - **Presentation Layer**: Implements the UI using **Jetpack Compose**. Uses **ViewModel** (StateFlow) to manage UI state.
 - **Dependency Injection**: Powered by **Koin**, with dedicated modules for shared and platform-specific dependencies.
 

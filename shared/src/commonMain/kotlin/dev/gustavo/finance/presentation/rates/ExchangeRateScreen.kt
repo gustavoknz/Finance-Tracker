@@ -11,8 +11,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
 
@@ -22,17 +20,11 @@ class ExchangeRateScreen : Screen {
     override fun Content() {
         val viewModel = koinViewModel<ExchangeRateViewModel>()
         val state by viewModel.state.collectAsState()
-        val navigator = LocalNavigator.currentOrThrow
 
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Exchange Rates") },
-                    navigationIcon = {
-                        TextButton(onClick = { navigator.pop() }) {
-                            Text("Back")
-                        }
-                    }
+                    title = { Text("Exchange Rates") }
                 )
             }
         ) { padding ->
