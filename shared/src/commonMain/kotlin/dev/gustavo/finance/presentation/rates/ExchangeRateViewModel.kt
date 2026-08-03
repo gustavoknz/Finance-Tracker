@@ -40,7 +40,7 @@ class ExchangeRateViewModel(
                 val response = repository.getLatestRates(base)
                 _state.value = ExchangeRateState.Success(response.base, response.rates)
             } catch (e: Exception) {
-                _state.value = ExchangeRateState.Error(e.message ?: "Unknown error")
+                _state.value = ExchangeRateState.Error(e.message ?: "")
             }
         }
     }

@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">Currency Tracker</string>
+    <string name="exchange_rates_title">Exchange Rates</string>
+    <string name="base_currency_label">Base: %s</string>
+    <string name="unknown_error">Unknown error</string>
+</resources>

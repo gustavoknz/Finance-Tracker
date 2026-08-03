@@ -11,6 +11,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
+import finance_tracker.shared.generated.resources.Res
+import finance_tracker.shared.generated.resources.base_currency_label
+import finance_tracker.shared.generated.resources.exchange_rates_title
+import finance_tracker.shared.generated.resources.unknown_error
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
 
@@ -24,7 +29,7 @@ class ExchangeRateScreen : Screen {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Exchange Rates") }
+                    title = { Text(stringResource(Res.string.exchange_rates_title)) }
                 )
             }
         ) { padding ->
@@ -47,7 +52,7 @@ class ExchangeRateScreen : Screen {
                     }
                     is ExchangeRateState.Error -> {
                         Text(
-                            text = currentState.message,
+                            text = currentState.message.ifBlank { stringResource(Res.string.unknown_error) },
                             color = MaterialTheme.colorScheme.error,
                             modifier = Modifier.align(Alignment.Center)
                         )
@@ -72,7 +77,7 @@ class ExchangeRateScreen : Screen {
 
         Column {
             Text(
-                text = "Base: $base",
+                text = stringResource(Res.string.base_currency_label, base),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(16.dp)
             )
