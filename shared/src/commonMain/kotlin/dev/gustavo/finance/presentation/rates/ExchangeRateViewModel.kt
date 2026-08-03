@@ -10,7 +10,11 @@ import kotlinx.coroutines.launch
 
 sealed interface ExchangeRateState {
     data object Loading : ExchangeRateState
-    data class Success(val base: String, val rates: Map<String, Double>) : ExchangeRateState
+    data class Success(
+        val base: String,
+        val rates: Map<String, Double>,
+        val isRefreshing: Boolean = false
+    ) : ExchangeRateState
     data class Error(val message: String) : ExchangeRateState
 }
 
@@ -26,7 +30,12 @@ class ExchangeRateViewModel(
 
     fun fetchRates(base: String) {
         viewModelScope.launch {
-            _state.value = ExchangeRateState.Loading
+            val currentState = _state.value
+            if (currentState is ExchangeRateState.Success) {
+                _state.value = currentState.copy(isRefreshing = true)
+            } else {
+                _state.value = ExchangeRateState.Loading
+            }
             try {
                 val response = repository.getLatestRates(base)
                 _state.value = ExchangeRateState.Success(response.base, response.rates)

@@ -1,12 +1,12 @@
 package dev.gustavo.finance.presentation.rates
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -39,6 +39,11 @@ class ExchangeRateScreen : Screen {
                             rates = currentState.rates,
                             onRateClick = { currency -> viewModel.fetchRates(currency) }
                         )
+                        if (currentState.isRefreshing) {
+                            LinearProgressIndicator(
+                                modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter)
+                            )
+                        }
                     }
                     is ExchangeRateState.Error -> {
                         Text(
@@ -58,6 +63,13 @@ class ExchangeRateScreen : Screen {
         rates: Map<String, Double>,
         onRateClick: (String) -> Unit
     ) {
+        var clickedCurrency by remember { mutableStateOf<String?>(null) }
+
+        // Reset clickedCurrency when data changes (e.g. after successful fetch)
+        LaunchedEffect(rates) {
+            clickedCurrency = null
+        }
+
         Column {
             Text(
                 text = "Base: $base",
@@ -68,8 +80,23 @@ class ExchangeRateScreen : Screen {
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(rates.toList()) { (currency, rate) ->
-                    RateItem(currency, rate, onClick = { onRateClick(currency) })
+                items(rates.toList(), key = { it.first }) { (currency, rate) ->
+                    val isClicked = currency == clickedCurrency
+                    
+                    AnimatedVisibility(
+                        visible = !isClicked,
+                        exit = fadeOut(tween(500)) + slideOutVertically(tween(500)) { -it },
+                        modifier = Modifier.animateItem()
+                    ) {
+                        RateItem(
+                            currency = currency,
+                            rate = rate,
+                            onClick = {
+                                clickedCurrency = currency
+                                onRateClick(currency)
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -77,10 +104,15 @@ class ExchangeRateScreen : Screen {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    private fun RateItem(currency: String, rate: Double, onClick: () -> Unit) {
+    private fun RateItem(
+        currency: String, 
+        rate: Double, 
+        onClick: () -> Unit,
+        modifier: Modifier = Modifier
+    ) {
         Card(
             onClick = onClick,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Row(
