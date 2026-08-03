@@ -34,7 +34,11 @@ class ExchangeRateScreen : Screen {
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                     }
                     is ExchangeRateState.Success -> {
-                        RateList(currentState.base, currentState.rates)
+                        RateList(
+                            base = currentState.base,
+                            rates = currentState.rates,
+                            onRateClick = { currency -> viewModel.fetchRates(currency) }
+                        )
                     }
                     is ExchangeRateState.Error -> {
                         Text(
@@ -49,7 +53,11 @@ class ExchangeRateScreen : Screen {
     }
 
     @Composable
-    private fun RateList(base: String, rates: Map<String, Double>) {
+    private fun RateList(
+        base: String,
+        rates: Map<String, Double>,
+        onRateClick: (String) -> Unit
+    ) {
         Column {
             Text(
                 text = "Base: $base",
@@ -61,15 +69,17 @@ class ExchangeRateScreen : Screen {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(rates.toList()) { (currency, rate) ->
-                    RateItem(currency, rate)
+                    RateItem(currency, rate, onClick = { onRateClick(currency) })
                 }
             }
         }
     }
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    private fun RateItem(currency: String, rate: Double) {
+    private fun RateItem(currency: String, rate: Double, onClick: () -> Unit) {
         Card(
+            onClick = onClick,
             modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
