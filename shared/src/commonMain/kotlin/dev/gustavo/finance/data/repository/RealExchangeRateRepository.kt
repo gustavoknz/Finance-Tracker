@@ -10,4 +10,8 @@ class RealExchangeRateRepository(
     override suspend fun getLatestRates(base: String): ExchangeRatesResponse {
         return currencyService.getLatestRates(base)
     }
+
+    override suspend fun getCurrencies(): Map<String, String> {
+        return currencyService.getCurrencies()
+    }
 }

@@ -14,6 +14,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import finance_tracker.shared.generated.resources.Res
 import finance_tracker.shared.generated.resources.base_currency_label
 import finance_tracker.shared.generated.resources.exchange_rates_title
+import finance_tracker.shared.generated.resources.last_updated_label
 import finance_tracker.shared.generated.resources.unknown_error
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -42,6 +43,8 @@ class ExchangeRateScreen : Screen {
                         RateList(
                             base = currentState.base,
                             rates = currentState.rates,
+                            currencyNames = currentState.currencyNames,
+                            lastUpdated = currentState.lastUpdated,
                             onRateClick = { currency -> viewModel.fetchRates(currency) }
                         )
                         if (currentState.isRefreshing) {
@@ -66,6 +69,8 @@ class ExchangeRateScreen : Screen {
     private fun RateList(
         base: String,
         rates: Map<String, Double>,
+        currencyNames: Map<String, String>,
+        lastUpdated: String,
         onRateClick: (String) -> Unit
     ) {
         var clickedCurrency by remember { mutableStateOf<String?>(null) }
@@ -76,13 +81,23 @@ class ExchangeRateScreen : Screen {
         }
 
         Column {
-            Text(
-                text = stringResource(Res.string.base_currency_label, base),
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(16.dp)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(Res.string.base_currency_label, base),
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                Text(
+                    text = stringResource(Res.string.last_updated_label, lastUpdated),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
             LazyColumn(
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(rates.toList(), key = { it.first }) { (currency, rate) ->
@@ -95,6 +110,7 @@ class ExchangeRateScreen : Screen {
                     ) {
                         RateItem(
                             currency = currency,
+                            fullName = currencyNames[currency] ?: "",
                             rate = rate,
                             onClick = {
                                 clickedCurrency = currency
@@ -110,7 +126,8 @@ class ExchangeRateScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     private fun RateItem(
-        currency: String, 
+        currency: String,
+        fullName: String,
         rate: Double, 
         onClick: () -> Unit,
         modifier: Modifier = Modifier
@@ -124,14 +141,23 @@ class ExchangeRateScreen : Screen {
                 modifier = Modifier.padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = currency,
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f)
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = currency,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    if (fullName.isNotBlank()) {
+                        Text(
+                            text = fullName,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
                 Text(
                     text = rate.toString(),
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }

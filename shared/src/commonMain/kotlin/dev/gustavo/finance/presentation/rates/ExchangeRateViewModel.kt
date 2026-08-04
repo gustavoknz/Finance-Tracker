@@ -13,6 +13,8 @@ sealed interface ExchangeRateState {
     data class Success(
         val base: String,
         val rates: Map<String, Double>,
+        val currencyNames: Map<String, String>,
+        val lastUpdated: String,
         val isRefreshing: Boolean = false
     ) : ExchangeRateState
     data class Error(val message: String) : ExchangeRateState
@@ -23,9 +25,22 @@ class ExchangeRateViewModel(
 ) : ViewModel() {
     private val _state = MutableStateFlow<ExchangeRateState>(ExchangeRateState.Loading)
     val state: StateFlow<ExchangeRateState> = _state.asStateFlow()
+    
+    private var cachedCurrencyNames: Map<String, String> = emptyMap()
 
     init {
-        fetchRates("EUR")
+        fetchInitialData()
+    }
+
+    private fun fetchInitialData() {
+        viewModelScope.launch {
+            try {
+                cachedCurrencyNames = repository.getCurrencies()
+                fetchRates("EUR")
+            } catch (e: Exception) {
+                _state.value = ExchangeRateState.Error(e.message ?: "")
+            }
+        }
     }
 
     fun fetchRates(base: String) {
@@ -38,7 +53,12 @@ class ExchangeRateViewModel(
             }
             try {
                 val response = repository.getLatestRates(base)
-                _state.value = ExchangeRateState.Success(response.base, response.rates)
+                _state.value = ExchangeRateState.Success(
+                    base = response.base,
+                    rates = response.rates,
+                    currencyNames = cachedCurrencyNames,
+                    lastUpdated = response.date
+                )
             } catch (e: Exception) {
                 _state.value = ExchangeRateState.Error(e.message ?: "")
             }

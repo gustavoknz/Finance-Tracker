@@ -19,4 +19,15 @@ class MockExchangeRateRepository : ExchangeRateRepository {
             )
         )
     }
+
+    override suspend fun getCurrencies(): Map<String, String> {
+        delay(300)
+        return mapOf(
+            "USD" to "United States Dollar",
+            "GBP" to "British Pound Sterling",
+            "BRL" to "Brazilian Real",
+            "AUD" to "Australian Dollar",
+            "EUR" to "Euro"
+        )
+    }
 }

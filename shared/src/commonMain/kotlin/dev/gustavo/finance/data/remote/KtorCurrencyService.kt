@@ -14,4 +14,8 @@ class KtorCurrencyService(
             parameter("base", base)
         }.body()
     }
+
+    override suspend fun getCurrencies(): Map<String, String> {
+        return httpClient.get("https://api.frankfurter.dev/v1/currencies").body()
+    }
 }
