@@ -10,12 +10,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cafe.adriel.voyager.core.screen.Screen
 import finance_tracker.shared.generated.resources.Res
 import finance_tracker.shared.generated.resources.base_currency_label
 import finance_tracker.shared.generated.resources.exchange_rates_title
 import finance_tracker.shared.generated.resources.last_updated_label
 import finance_tracker.shared.generated.resources.unknown_error
+import dev.gustavo.finance.util.getCurrencySymbol
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
@@ -25,7 +27,7 @@ class ExchangeRateScreen : Screen {
     @Composable
     override fun Content() {
         val viewModel = koinViewModel<ExchangeRateViewModel>()
-        val state by viewModel.state.collectAsState()
+        val state by viewModel.state.collectAsStateWithLifecycle()
 
         Scaffold(
             topBar = {
@@ -142,10 +144,18 @@ class ExchangeRateScreen : Screen {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = currency,
-                        style = MaterialTheme.typography.titleMedium
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = currency,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            text = " (${getCurrencySymbol(currency)})",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
+                    }
                     if (fullName.isNotBlank()) {
                         Text(
                             text = fullName,
