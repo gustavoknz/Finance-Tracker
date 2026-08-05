@@ -9,14 +9,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cafe.adriel.voyager.core.screen.Screen
 import finance_tracker.shared.generated.resources.Res
-import finance_tracker.shared.generated.resources.base_currency_label
-import finance_tracker.shared.generated.resources.exchange_rates_title
-import finance_tracker.shared.generated.resources.last_updated_label
-import finance_tracker.shared.generated.resources.unknown_error
+import finance_tracker.shared.generated.resources.*
+import dev.gustavo.finance.util.DataError
 import dev.gustavo.finance.util.getCurrencySymbol
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -56,13 +55,41 @@ class ExchangeRateScreen : Screen {
                         }
                     }
                     is ExchangeRateState.Error -> {
-                        Text(
-                            text = currentState.message.ifBlank { stringResource(Res.string.unknown_error) },
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.align(Alignment.Center)
+                        ErrorView(
+                            error = currentState.error,
+                            onRetry = { viewModel.fetchRates(currentState.base) }
                         )
                     }
                 }
+            }
+        }
+    }
+
+    @Composable
+    private fun ErrorView(
+        error: DataError.Network,
+        onRetry: () -> Unit
+    ) {
+        val message = when (error) {
+            DataError.Network.NO_INTERNET -> stringResource(Res.string.error_network)
+            DataError.Network.SERVER_ERROR -> stringResource(Res.string.error_server)
+            else -> stringResource(Res.string.error_unknown)
+        }
+
+        Column(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = onRetry) {
+                Text(stringResource(Res.string.retry_button))
             }
         }
     }

@@ -3,6 +3,8 @@ package dev.gustavo.finance.presentation.rates
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.gustavo.finance.domain.repository.ExchangeRateRepository
+import dev.gustavo.finance.util.DataError
+import dev.gustavo.finance.util.toDataError
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,7 +19,7 @@ sealed interface ExchangeRateState {
         val lastUpdated: String,
         val isRefreshing: Boolean = false
     ) : ExchangeRateState
-    data class Error(val message: String) : ExchangeRateState
+    data class Error(val error: DataError.Network, val base: String) : ExchangeRateState
 }
 
 class ExchangeRateViewModel(
@@ -38,7 +40,7 @@ class ExchangeRateViewModel(
                 cachedCurrencyNames = repository.getCurrencies()
                 fetchRates("EUR")
             } catch (e: Exception) {
-                _state.value = ExchangeRateState.Error(e.message ?: "")
+                _state.value = ExchangeRateState.Error(e.toDataError(), "EUR")
             }
         }
     }
@@ -60,7 +62,7 @@ class ExchangeRateViewModel(
                     lastUpdated = response.date
                 )
             } catch (e: Exception) {
-                _state.value = ExchangeRateState.Error(e.message ?: "")
+                _state.value = ExchangeRateState.Error(e.toDataError(), base)
             }
         }
     }
