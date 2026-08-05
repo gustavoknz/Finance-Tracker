@@ -1,5 +1,7 @@
 package dev.gustavo.finance.di
 
+import dev.gustavo.finance.data.local.AppDatabase
+import dev.gustavo.finance.data.local.getRoomDatabase
 import dev.gustavo.finance.data.remote.CurrencyService
 import dev.gustavo.finance.data.remote.KtorCurrencyService
 import dev.gustavo.finance.data.repository.RealExchangeRateRepository
@@ -28,6 +30,10 @@ val commonModule = module {
             }
         }
     }
+    single { getRoomDatabase(get()) }
+    single { get<AppDatabase>().currencyDao() }
+    single { get<AppDatabase>().exchangeRateDao() }
+
     singleOf(::KtorCurrencyService) { bind<CurrencyService>() }
     singleOf(::RealExchangeRateRepository) { bind<ExchangeRateRepository>() }
     factoryOf(::ExchangeRateViewModel)
@@ -36,7 +42,7 @@ val commonModule = module {
 fun initKoin(appDeclaration: KoinAppDeclaration = {}) =
     startKoin {
         appDeclaration()
-        modules(commonModule)
+        modules(commonModule, platformModule)
     }
 
 // For iOS
