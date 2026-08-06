@@ -2,7 +2,8 @@ package dev.gustavo.finance.presentation.rates
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dev.gustavo.finance.domain.repository.ExchangeRateRepository
+import dev.gustavo.finance.domain.usecase.GetCurrenciesUseCase
+import dev.gustavo.finance.domain.usecase.GetLatestRatesUseCase
 import dev.gustavo.finance.util.DataError
 import dev.gustavo.finance.util.toDataError
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +24,8 @@ sealed interface ExchangeRateState {
 }
 
 class ExchangeRateViewModel(
-    private val repository: ExchangeRateRepository
+    private val getCurrenciesUseCase: GetCurrenciesUseCase,
+    private val getLatestRatesUseCase: GetLatestRatesUseCase
 ) : ViewModel() {
     private val _state = MutableStateFlow<ExchangeRateState>(ExchangeRateState.Loading)
     val state: StateFlow<ExchangeRateState> = _state.asStateFlow()
@@ -37,7 +39,7 @@ class ExchangeRateViewModel(
     private fun fetchInitialData() {
         viewModelScope.launch {
             try {
-                cachedCurrencyNames = repository.getCurrencies()
+                cachedCurrencyNames = getCurrenciesUseCase()
                 fetchRates("EUR")
             } catch (e: Exception) {
                 _state.value = ExchangeRateState.Error(e.toDataError(), "EUR")
@@ -54,7 +56,7 @@ class ExchangeRateViewModel(
                 _state.value = ExchangeRateState.Loading
             }
             try {
-                val response = repository.getLatestRates(base)
+                val response = getLatestRatesUseCase(base)
                 _state.value = ExchangeRateState.Success(
                     base = response.base,
                     rates = response.rates,

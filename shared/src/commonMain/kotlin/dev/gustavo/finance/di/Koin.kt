@@ -6,6 +6,8 @@ import dev.gustavo.finance.data.remote.CurrencyService
 import dev.gustavo.finance.data.remote.KtorCurrencyService
 import dev.gustavo.finance.data.repository.RealExchangeRateRepository
 import dev.gustavo.finance.domain.repository.ExchangeRateRepository
+import dev.gustavo.finance.domain.usecase.GetCurrenciesUseCase
+import dev.gustavo.finance.domain.usecase.GetLatestRatesUseCase
 import dev.gustavo.finance.presentation.rates.ExchangeRateViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -36,6 +38,8 @@ val commonModule = module {
 
     singleOf(::KtorCurrencyService) { bind<CurrencyService>() }
     singleOf(::RealExchangeRateRepository) { bind<ExchangeRateRepository>() }
+    factoryOf(::GetCurrenciesUseCase)
+    factoryOf(::GetLatestRatesUseCase)
     factoryOf(::ExchangeRateViewModel)
 }
 
