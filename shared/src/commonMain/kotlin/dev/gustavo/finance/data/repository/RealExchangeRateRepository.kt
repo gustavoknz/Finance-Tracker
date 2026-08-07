@@ -4,6 +4,8 @@ import dev.gustavo.finance.data.local.CurrencyDao
 import dev.gustavo.finance.data.local.CurrencyEntity
 import dev.gustavo.finance.data.local.ExchangeRateDao
 import dev.gustavo.finance.data.local.ExchangeRateEntity
+import dev.gustavo.finance.data.local.MetadataDao
+import dev.gustavo.finance.data.local.MetadataEntity
 import dev.gustavo.finance.data.mapper.toDataError
 import dev.gustavo.finance.data.remote.CurrencyService
 import dev.gustavo.finance.domain.model.ExchangeRatesResponse
@@ -11,12 +13,19 @@ import dev.gustavo.finance.domain.repository.ExchangeRateRepository
 import dev.gustavo.finance.domain.util.DataError
 import dev.gustavo.finance.domain.util.Result
 import kotlinx.coroutines.flow.first
+import kotlin.time.Clock
 
 class RealExchangeRateRepository(
     private val currencyService: CurrencyService,
     private val currencyDao: CurrencyDao,
-    private val exchangeRateDao: ExchangeRateDao
+    private val exchangeRateDao: ExchangeRateDao,
+    private val metadataDao: MetadataDao
 ) : ExchangeRateRepository {
+
+    companion object {
+        private const val CURRENCIES_TTL = 24 * 60 * 60 * 1000L // 24 hours
+    }
+
     override suspend fun getLatestRates(base: String): Result<ExchangeRatesResponse, DataError.Network> {
         return try {
             val remoteResponse = currencyService.getLatestRates(base)
@@ -49,19 +58,33 @@ class RealExchangeRateRepository(
 
     override suspend fun getCurrencies(): Result<Map<String, String>, DataError.Network> {
         return try {
-            val count = currencyDao.getCount()
-            if (count == 0) {
+            val lastUpdatedMillis = metadataDao.getLastUpdatedTimestamp("currencies")
+            val currentTimeMillis = Clock.System.now().toEpochMilliseconds()
+            val isStale = if (lastUpdatedMillis == null) {
+                true
+            } else {
+                (currentTimeMillis - lastUpdatedMillis) > CURRENCIES_TTL
+            }
+
+            if (isStale) {
                 val remoteCurrencies = currencyService.getCurrencies()
                 val entities = remoteCurrencies.map { (code, name) ->
                     CurrencyEntity(code = code, name = name)
                 }
                 currencyDao.insertCurrencies(entities)
+                metadataDao.insertMetadata(MetadataEntity("currencies", currentTimeMillis))
                 Result.Success(remoteCurrencies)
             } else {
-                Result.Success(currencyDao.getAllCurrencies().first().associate { it.code to it.name })
+                val localCurrencies = currencyDao.getAllCurrencies().first().associate { it.code to it.name }
+                Result.Success(localCurrencies)
             }
         } catch (e: Exception) {
-            Result.Error(e.toDataError())
+            val localCurrencies = currencyDao.getAllCurrencies().first().associate { it.code to it.name }
+            if (localCurrencies.isNotEmpty()) {
+                Result.Success(localCurrencies)
+            } else {
+                Result.Error(e.toDataError())
+            }
         }
     }
 }

@@ -35,6 +35,7 @@ val commonModule = module {
     single { getRoomDatabase(get()) }
     single { get<AppDatabase>().currencyDao() }
     single { get<AppDatabase>().exchangeRateDao() }
+    single { get<AppDatabase>().metadataDao() }
 
     singleOf(::KtorCurrencyService) { bind<CurrencyService>() }
     singleOf(::RealExchangeRateRepository) { bind<ExchangeRateRepository>() }
