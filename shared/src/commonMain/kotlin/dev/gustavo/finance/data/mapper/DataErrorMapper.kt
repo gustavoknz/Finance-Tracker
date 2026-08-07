@@ -1,23 +1,16 @@
-package dev.gustavo.finance.util
+package dev.gustavo.finance.data.mapper
 
+import dev.gustavo.finance.domain.util.DataError
 import io.ktor.client.plugins.*
-import io.ktor.utils.io.errors.*
+import io.ktor.http.HttpStatusCode
+import kotlinx.io.IOException
 
-sealed interface DataError {
-    enum class Network : DataError {
-        SERVICE_UNAVAILABLE,
-        CLIENT_ERROR,
-        SERVER_ERROR,
-        UNKNOWN,
-        NO_INTERNET
-    }
-}
-
-fun Exception.toDataError(): DataError.Network {
+fun Throwable.toDataError(): DataError.Network {
     return when (this) {
         is IOException -> DataError.Network.NO_INTERNET
         is ResponseException -> {
             when (response.status.value) {
+                HttpStatusCode.ServiceUnavailable.value -> DataError.Network.SERVICE_UNAVAILABLE
                 in 400..499 -> DataError.Network.CLIENT_ERROR
                 in 500..599 -> DataError.Network.SERVER_ERROR
                 else -> DataError.Network.UNKNOWN

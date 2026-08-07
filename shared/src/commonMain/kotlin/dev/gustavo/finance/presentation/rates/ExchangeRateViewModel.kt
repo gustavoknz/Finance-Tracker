@@ -4,8 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.gustavo.finance.domain.usecase.GetCurrenciesUseCase
 import dev.gustavo.finance.domain.usecase.GetLatestRatesUseCase
-import dev.gustavo.finance.util.DataError
-import dev.gustavo.finance.util.toDataError
+import dev.gustavo.finance.domain.util.DataError
+import dev.gustavo.finance.domain.util.onError
+import dev.gustavo.finance.domain.util.onSuccess
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,12 +39,14 @@ class ExchangeRateViewModel(
 
     private fun fetchInitialData() {
         viewModelScope.launch {
-            try {
-                cachedCurrencyNames = getCurrenciesUseCase()
-                fetchRates("EUR")
-            } catch (e: Exception) {
-                _state.value = ExchangeRateState.Error(e.toDataError(), "EUR")
-            }
+            getCurrenciesUseCase()
+                .onSuccess { currencies ->
+                    cachedCurrencyNames = currencies
+                    fetchRates("EUR")
+                }
+                .onError { error ->
+                    _state.value = ExchangeRateState.Error(error, "EUR")
+                }
         }
     }
 
@@ -55,17 +58,19 @@ class ExchangeRateViewModel(
             } else {
                 _state.value = ExchangeRateState.Loading
             }
-            try {
-                val response = getLatestRatesUseCase(base)
-                _state.value = ExchangeRateState.Success(
-                    base = response.base,
-                    rates = response.rates,
-                    currencyNames = cachedCurrencyNames,
-                    lastUpdated = response.date
-                )
-            } catch (e: Exception) {
-                _state.value = ExchangeRateState.Error(e.toDataError(), base)
-            }
+            
+            getLatestRatesUseCase(base)
+                .onSuccess { response ->
+                    _state.value = ExchangeRateState.Success(
+                        base = response.base,
+                        rates = response.rates,
+                        currencyNames = cachedCurrencyNames,
+                        lastUpdated = response.date
+                    )
+                }
+                .onError { error ->
+                    _state.value = ExchangeRateState.Error(error, base)
+                }
         }
     }
 }

@@ -15,7 +15,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cafe.adriel.voyager.core.screen.Screen
 import finance_tracker.shared.generated.resources.Res
 import finance_tracker.shared.generated.resources.*
-import dev.gustavo.finance.util.DataError
+import dev.gustavo.finance.domain.util.DataError
 import dev.gustavo.finance.util.getCurrencySymbol
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -72,6 +72,8 @@ class ExchangeRateScreen : Screen {
     ) {
         val message = when (error) {
             DataError.Network.NO_INTERNET -> stringResource(Res.string.error_network)
+            DataError.Network.SERVICE_UNAVAILABLE -> stringResource(Res.string.error_service_unavailable)
+            DataError.Network.CLIENT_ERROR -> stringResource(Res.string.error_client)
             DataError.Network.SERVER_ERROR -> stringResource(Res.string.error_server)
             else -> stringResource(Res.string.error_unknown)
         }

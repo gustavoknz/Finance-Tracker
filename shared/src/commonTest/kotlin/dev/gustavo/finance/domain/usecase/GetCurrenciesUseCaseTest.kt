@@ -1,10 +1,12 @@
 package dev.gustavo.finance.domain.usecase
 
+import dev.gustavo.finance.domain.util.DataError
+import dev.gustavo.finance.domain.util.Result
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 class GetCurrenciesUseCaseTest {
     private lateinit var repository: FakeExchangeRateRepository
@@ -23,15 +25,17 @@ class GetCurrenciesUseCaseTest {
 
         val result = getCurrenciesUseCase()
 
-        assertEquals(expected, result)
+        assertTrue(result is Result.Success)
+        assertEquals(expected, result.data)
     }
 
     @Test
-    fun `invoke should throw when repository fails`() = runTest {
+    fun `invoke should return error when repository fails`() = runTest {
         repository.shouldThrow = true
 
-        assertFailsWith<Exception> {
-            getCurrenciesUseCase()
-        }
+        val result = getCurrenciesUseCase()
+
+        assertTrue(result is Result.Error)
+        assertEquals(DataError.Network.UNKNOWN, result.error)
     }
 }

@@ -4,6 +4,8 @@
     <string name="base_currency_label">Base: %1$s</string>
     <string name="last_updated_label">Last updated: %1$s</string>
     <string name="error_network">Check your internet connection and try again.</string>
+    <string name="error_service_unavailable">The service is temporarily unavailable. Please try again in a few moments.</string>
+    <string name="error_client">Invalid request. Please contact support.</string>
     <string name="error_server">Something went wrong on our end. Please try again later.</string>
     <string name="error_unknown">An unexpected error occurred.</string>
     <string name="retry_button">Retry</string>
