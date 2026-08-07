@@ -35,4 +35,11 @@ inline fun <T, E: dev.gustavo.finance.domain.util.Error> Result<T, E>.onError(ac
     }
 }
 
+fun <T, E: Error> Result<T, E>.getOrNull(): T? {
+    return when(this) {
+        is Result.Error -> null
+        is Result.Success -> data
+    }
+}
+
 typealias DomainResult<D> = Result<D, DataError>
