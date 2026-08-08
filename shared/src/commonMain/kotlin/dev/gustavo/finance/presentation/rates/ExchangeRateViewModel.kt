@@ -9,19 +9,21 @@ import dev.gustavo.finance.domain.util.Result
 import dev.gustavo.finance.domain.util.onError
 import dev.gustavo.finance.domain.util.onSuccess
 import dev.gustavo.finance.domain.util.map
+import dev.gustavo.finance.util.getCurrencySymbol
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 
 sealed interface ExchangeRateState {
     data object Loading : ExchangeRateState
     data class Success(
         val base: String,
-        val rates: Map<String, Double>,
-        val currencyNames: Map<String, String>,
+        val rates: ImmutableList<ExchangeRateUiModel>,
         val lastUpdated: String,
         val isRefreshing: Boolean = false
     ) : ExchangeRateState
@@ -64,10 +66,18 @@ class ExchangeRateViewModel(
                 .onSuccess {
                     getLatestRatesUseCase(base)
                         .onSuccess { response ->
+                            val uiRates = response.rates.map { (code, rate) ->
+                                ExchangeRateUiModel(
+                                    code = code,
+                                    name = cachedCurrencyNames[code] ?: "",
+                                    symbol = getCurrencySymbol(code),
+                                    rate = rate,
+                                    formattedRate = rate.toString()
+                                )
+                            }.toImmutableList()
                             _state.value = ExchangeRateState.Success(
                                 base = response.base,
-                                rates = response.rates,
-                                currencyNames = cachedCurrencyNames,
+                                rates = uiRates,
                                 lastUpdated = response.date
                             )
                         }

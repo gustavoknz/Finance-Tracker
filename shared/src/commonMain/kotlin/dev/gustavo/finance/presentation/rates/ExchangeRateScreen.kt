@@ -16,8 +16,8 @@ import cafe.adriel.voyager.core.screen.Screen
 import finance_tracker.shared.generated.resources.Res
 import finance_tracker.shared.generated.resources.*
 import dev.gustavo.finance.domain.util.DataError
-import dev.gustavo.finance.util.getCurrencySymbol
 import org.jetbrains.compose.resources.stringResource
+import kotlinx.collections.immutable.ImmutableList
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
 
@@ -44,7 +44,6 @@ class ExchangeRateScreen : Screen {
                         RateList(
                             base = currentState.base,
                             rates = currentState.rates,
-                            currencyNames = currentState.currencyNames,
                             lastUpdated = currentState.lastUpdated,
                             onRateClick = { currency -> viewModel.fetchRates(currency) }
                         )
@@ -99,8 +98,7 @@ class ExchangeRateScreen : Screen {
     @Composable
     private fun RateList(
         base: String,
-        rates: Map<String, Double>,
-        currencyNames: Map<String, String>,
+        rates: ImmutableList<ExchangeRateUiModel>,
         lastUpdated: String,
         onRateClick: (String) -> Unit
     ) {
@@ -131,8 +129,8 @@ class ExchangeRateScreen : Screen {
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(rates.toList(), key = { it.first }) { (currency, rate) ->
-                    val isClicked = currency == clickedCurrency
+                items(rates, key = { it.code }) { uiModel ->
+                    val isClicked = uiModel.code == clickedCurrency
                     
                     AnimatedVisibility(
                         visible = !isClicked,
@@ -140,12 +138,10 @@ class ExchangeRateScreen : Screen {
                         modifier = Modifier.animateItem()
                     ) {
                         RateItem(
-                            currency = currency,
-                            fullName = currencyNames[currency] ?: "",
-                            rate = rate,
+                            uiModel = uiModel,
                             onClick = {
-                                clickedCurrency = currency
-                                onRateClick(currency)
+                                clickedCurrency = uiModel.code
+                                onRateClick(uiModel.code)
                             }
                         )
                     }
@@ -157,9 +153,7 @@ class ExchangeRateScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     private fun RateItem(
-        currency: String,
-        fullName: String,
-        rate: Double, 
+        uiModel: ExchangeRateUiModel,
         onClick: () -> Unit,
         modifier: Modifier = Modifier
     ) {
@@ -175,26 +169,26 @@ class ExchangeRateScreen : Screen {
                 Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = currency,
+                            text = uiModel.code,
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
-                            text = " (${getCurrencySymbol(currency)})",
+                            text = " (${uiModel.symbol})",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.padding(start = 4.dp)
                         )
                     }
-                    if (fullName.isNotBlank()) {
+                    if (uiModel.name.isNotBlank()) {
                         Text(
-                            text = fullName,
+                            text = uiModel.name,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
                 Text(
-                    text = rate.toString(),
+                    text = uiModel.formattedRate,
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
