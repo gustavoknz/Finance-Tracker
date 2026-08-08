@@ -9,6 +9,7 @@ import dev.gustavo.finance.domain.util.Result
 import dev.gustavo.finance.domain.util.onError
 import dev.gustavo.finance.domain.util.onSuccess
 import dev.gustavo.finance.domain.util.map
+import dev.gustavo.finance.domain.util.flatMap
 import dev.gustavo.finance.util.getCurrencySymbol
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -44,12 +45,10 @@ class ExchangeRateViewModel(
         fetchRates("EUR")
     }
 
-    private suspend fun ensureNamesLoaded(): Result<Unit, DataError.Network> {
+    private suspend fun getCurrencyNames(): Result<Map<String, String>, DataError.Network> {
         return namesMutex.withLock {
-            if (cachedCurrencyNames.isNotEmpty()) return@withLock Result.Success(Unit)
-            getCurrenciesUseCase()
-                .onSuccess { cachedCurrencyNames = it }
-                .map { Unit }
+            if (cachedCurrencyNames.isNotEmpty()) return@withLock Result.Success(cachedCurrencyNames)
+            getCurrenciesUseCase().onSuccess { cachedCurrencyNames = it }
         }
     }
 
@@ -62,28 +61,26 @@ class ExchangeRateViewModel(
                 _state.value = ExchangeRateState.Loading
             }
             
-            ensureNamesLoaded()
-                .onSuccess {
-                    getLatestRatesUseCase(base)
-                        .onSuccess { response ->
-                            val uiRates = response.rates.map { (code, rate) ->
-                                ExchangeRateUiModel(
-                                    code = code,
-                                    name = cachedCurrencyNames[code] ?: "",
-                                    symbol = getCurrencySymbol(code),
-                                    rate = rate,
-                                    formattedRate = rate.toString()
-                                )
-                            }.toImmutableList()
-                            _state.value = ExchangeRateState.Success(
-                                base = response.base,
-                                rates = uiRates,
-                                lastUpdated = response.date
-                            )
-                        }
-                        .onError { error ->
-                            _state.value = ExchangeRateState.Error(error, base)
-                        }
+            getCurrencyNames()
+                .flatMap { names -> 
+                    getLatestRatesUseCase(base).map { response -> Pair(names, response) }
+                }
+                .onSuccess { (names, response) ->
+                    val uiRates = response.rates.map { (code, rate) ->
+                        ExchangeRateUiModel(
+                            code = code,
+                            name = names[code] ?: "",
+                            symbol = getCurrencySymbol(code),
+                            rate = rate,
+                            formattedRate = rate.toString()
+                        )
+                    }.toImmutableList()
+                    
+                    _state.value = ExchangeRateState.Success(
+                        base = response.base,
+                        rates = uiRates,
+                        lastUpdated = response.date
+                    )
                 }
                 .onError { error ->
                     _state.value = ExchangeRateState.Error(error, base)

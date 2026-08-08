@@ -12,6 +12,13 @@ inline fun <T, E: dev.gustavo.finance.domain.util.Error, R> Result<T, E>.map(tra
     }
 }
 
+inline fun <T, E: Error, R> Result<T, E>.flatMap(transform: (T) -> Result<R, E>): Result<R, E> {
+    return when(this) {
+        is Result.Error -> Result.Error(error)
+        is Result.Success -> transform(data)
+    }
+}
+
 fun <T, E: dev.gustavo.finance.domain.util.Error> Result<T, E>.asEmptyData(): Result<Unit, E> {
     return map {  }
 }
