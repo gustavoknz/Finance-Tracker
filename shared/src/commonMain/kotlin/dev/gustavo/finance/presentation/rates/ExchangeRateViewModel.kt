@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.gustavo.finance.domain.usecase.GetCurrenciesUseCase
 import dev.gustavo.finance.domain.usecase.GetLatestRatesUseCase
+import dev.gustavo.finance.domain.usecase.GetBaseCurrencyUseCase
+import dev.gustavo.finance.domain.usecase.SetBaseCurrencyUseCase
 import dev.gustavo.finance.domain.util.DataError
 import dev.gustavo.finance.domain.util.Result
 import dev.gustavo.finance.util.getCurrencySymbol
@@ -28,16 +30,19 @@ sealed interface ExchangeRateState {
 
 class ExchangeRateViewModel(
     private val getCurrenciesUseCase: GetCurrenciesUseCase,
-    private val getLatestRatesUseCase: GetLatestRatesUseCase
+    private val getLatestRatesUseCase: GetLatestRatesUseCase,
+    private val setBaseCurrencyUseCase: SetBaseCurrencyUseCase,
+    getBaseCurrencyUseCase: GetBaseCurrencyUseCase
 ) : ViewModel() {
 
     private var cachedCurrencyNames: Map<String, String> = emptyMap()
     private val namesMutex = Mutex()
 
-    private val _currentBase = MutableStateFlow("EUR")
+    private val _currentBase = MutableStateFlow(getBaseCurrencyUseCase())
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val state: StateFlow<ExchangeRateState> = _currentBase
+        .onEach { setBaseCurrencyUseCase(it) }
         .flatMapLatest { base ->
             flow {
                 val previousState = this@ExchangeRateViewModel.state.value

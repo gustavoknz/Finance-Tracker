@@ -84,6 +84,9 @@ kotlin {
             // Room
             implementation(libs.androidx.room.runtime)
             implementation(libs.sqlite.bundled)
+            
+            // Settings
+            implementation(libs.multiplatform.settings)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

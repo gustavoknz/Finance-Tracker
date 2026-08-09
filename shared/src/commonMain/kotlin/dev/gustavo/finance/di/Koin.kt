@@ -5,10 +5,12 @@ import dev.gustavo.finance.data.local.getRoomDatabase
 import dev.gustavo.finance.data.remote.CurrencyService
 import dev.gustavo.finance.data.remote.KtorCurrencyService
 import dev.gustavo.finance.data.repository.RealExchangeRateRepository
+import dev.gustavo.finance.data.repository.SettingsPreferencesRepository
 import dev.gustavo.finance.domain.repository.ExchangeRateRepository
-import dev.gustavo.finance.domain.usecase.GetCurrenciesUseCase
-import dev.gustavo.finance.domain.usecase.GetLatestRatesUseCase
+import dev.gustavo.finance.domain.repository.PreferencesRepository
+import dev.gustavo.finance.domain.usecase.*
 import dev.gustavo.finance.presentation.rates.ExchangeRateViewModel
+import com.russhwolf.settings.Settings
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
@@ -37,10 +39,15 @@ val commonModule = module {
     single { get<AppDatabase>().exchangeRateDao() }
     single { get<AppDatabase>().metadataDao() }
 
+    single { Settings() }
+    singleOf(::SettingsPreferencesRepository) { bind<PreferencesRepository>() }
+
     singleOf(::KtorCurrencyService) { bind<CurrencyService>() }
     singleOf(::RealExchangeRateRepository) { bind<ExchangeRateRepository>() }
     factoryOf(::GetCurrenciesUseCase)
     factoryOf(::GetLatestRatesUseCase)
+    factoryOf(::GetBaseCurrencyUseCase)
+    factoryOf(::SetBaseCurrencyUseCase)
     factoryOf(::ExchangeRateViewModel)
 }
 
