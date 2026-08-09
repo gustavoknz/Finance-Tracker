@@ -70,14 +70,14 @@ brew install semgrep
 ```
 
 ### Running Scans
-To run a complete scan using recommended community rules for Kotlin and Swift:
+To run a complete security scan using the best community rules for Kotlin and Swift:
 ```bash
 semgrep scan --config p/kotlin --config p/swift --config p/security-audit
 ```
 
-To use the local configuration:
+To run a scan that includes **project-specific rules** (like the intelligent Android Manifest audit):
 ```bash
-semgrep scan --config semgrep.yml
+semgrep scan --config p/kotlin --config p/swift --config p/security-audit --config semgrep.yml
 ```
 
 ---
