@@ -6,7 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import dev.gustavo.finance.di.commonModule
+import dev.gustavo.finance.di.appModule
 import org.koin.compose.KoinApplication
 import org.koin.dsl.koinConfiguration
 
@@ -24,9 +24,9 @@ class MainActivity : ComponentActivity() {
 @Preview
 @Composable
 fun AppAndroidPreview() {
-    KoinApplication(configuration = koinConfiguration {
-        modules(commonModule)
-    }) {
+    KoinApplication(
+        configuration = koinConfiguration { modules(appModule) }
+    ) {
         App()
     }
 }

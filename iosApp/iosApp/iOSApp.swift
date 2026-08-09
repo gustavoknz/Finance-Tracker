@@ -23,6 +23,6 @@ private struct AppDependencies {
     }
 
     func makeContentView() -> ContentView {
-        ContentView(makeRootViewController: MainViewControllerKt.MainViewController)
+        ContentView(makeRootViewController: MainViewControllerKt.mainViewController)
     }
 }
