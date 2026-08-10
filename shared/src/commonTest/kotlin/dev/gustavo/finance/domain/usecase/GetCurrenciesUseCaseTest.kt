@@ -1,5 +1,6 @@
 package dev.gustavo.finance.domain.usecase
 
+import dev.gustavo.finance.domain.repository.FakeExchangeRateRepository
 import dev.gustavo.finance.domain.util.DataError
 import dev.gustavo.finance.domain.util.Result
 import kotlinx.coroutines.flow.toList

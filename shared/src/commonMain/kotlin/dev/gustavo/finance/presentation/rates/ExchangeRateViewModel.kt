@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.flow.stateIn
 
 sealed interface ExchangeRateState {
@@ -52,6 +53,12 @@ class ExchangeRateViewModel(
             ) { currenciesResult, ratesResult ->
                 mapToState(base, currenciesResult, ratesResult)
             }
+        }.scan(ExchangeRateState.Loading as ExchangeRateState) { previous, current ->
+            if (current is ExchangeRateState.Loading && previous is ExchangeRateState.Success) {
+                previous.copy(isRefreshing = true)
+            } else {
+                current
+            }
         }
         .stateIn(
             scope = viewModelScope,
@@ -67,24 +74,17 @@ class ExchangeRateViewModel(
         return when {
             currenciesResult is Result.Error -> ExchangeRateState.Error(currenciesResult.error, base)
             ratesResult is Result.Error -> ExchangeRateState.Error(ratesResult.error, base)
-            currenciesResult is Result.Loading || ratesResult is Result.Loading -> {
-                if (currenciesResult is Result.Success && ratesResult is Result.Success) {
-                    createSuccessState(currenciesResult.data, ratesResult.data, isRefreshing = true)
-                } else {
-                    ExchangeRateState.Loading
-                }
-            }
             currenciesResult is Result.Success && ratesResult is Result.Success -> {
-                createSuccessState(currenciesResult.data, ratesResult.data, isRefreshing = false)
+                createSuccessState(currenciesResult.data, ratesResult.data)
             }
+
             else -> ExchangeRateState.Loading
         }
     }
 
     private fun createSuccessState(
         currencyNames: Map<String, String>,
-        ratesResponse: ExchangeRatesResponse,
-        isRefreshing: Boolean
+        ratesResponse: ExchangeRatesResponse
     ): ExchangeRateState.Success {
         val uiRates = ratesResponse.rates.map { (code, rate) ->
             ExchangeRateUiModel(
@@ -99,8 +99,7 @@ class ExchangeRateViewModel(
         return ExchangeRateState.Success(
             base = ratesResponse.base,
             rates = uiRates,
-            lastUpdated = ratesResponse.date,
-            isRefreshing = isRefreshing
+            lastUpdated = ratesResponse.date
         )
     }
 
