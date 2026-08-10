@@ -2,6 +2,7 @@ package dev.gustavo.finance.presentation.rates
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.gustavo.finance.domain.model.ExchangeRatesResponse
 import dev.gustavo.finance.domain.usecase.GetCurrenciesUseCase
 import dev.gustavo.finance.domain.usecase.GetLatestRatesUseCase
 import dev.gustavo.finance.domain.usecase.GetBaseCurrencyUseCase
@@ -35,63 +36,17 @@ class ExchangeRateViewModel(
     getBaseCurrencyUseCase: GetBaseCurrencyUseCase
 ) : ViewModel() {
 
-    private var cachedCurrencyNames: Map<String, String> = emptyMap()
-    private val namesMutex = Mutex()
-
     private val _currentBase = MutableStateFlow(getBaseCurrencyUseCase())
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val state: StateFlow<ExchangeRateState> = _currentBase
         .onEach { setBaseCurrencyUseCase(it) }
         .flatMapLatest { base ->
-            flow {
-                val previousState = this@ExchangeRateViewModel.state.value
-
-                // 1. Handle Currency Names Loading
-                if (cachedCurrencyNames.isEmpty()) {
-                    emit(ExchangeRateState.Loading)
-                    when (val result = getCurrencyNames()) {
-                        is Result.Error -> {
-                            emit(ExchangeRateState.Error(result.error, base))
-                            return@flow
-                        }
-
-                        is Result.Success -> { /* Continue */
-                        }
-                    }
-                } else if (previousState is ExchangeRateState.Success) {
-                    // Show refresh indicator if we already have data
-                    emit(previousState.copy(isRefreshing = true))
-                }
-
-                // 2. Handle Rates Fetching
-                when (val result = getLatestRatesUseCase(base)) {
-                    is Result.Error -> {
-                        emit(ExchangeRateState.Error(result.error, base))
-                    }
-
-                    is Result.Success -> {
-                        val response = result.data
-                        val uiRates = response.rates.map { (code, rate) ->
-                            ExchangeRateUiModel(
-                                code = code,
-                                name = cachedCurrencyNames[code] ?: "",
-                                symbol = getCurrencySymbol(code),
-                                rate = rate,
-                                formattedRate = rate.toString()
-                            )
-                        }.toImmutableList()
-
-                        emit(
-                            ExchangeRateState.Success(
-                                base = response.base,
-                                rates = uiRates,
-                                lastUpdated = response.date,
-                                isRefreshing = false
-                            )
-                        )
-                    }
-                }
+            combine(
+                getCurrenciesUseCase(),
+                getLatestRatesUseCase(base)
+            ) { currenciesResult, ratesResult ->
+                mapToState(base, currenciesResult, ratesResult)
             }
         }
         .stateIn(
@@ -100,15 +55,50 @@ class ExchangeRateViewModel(
             initialValue = ExchangeRateState.Loading
         )
 
-    private suspend fun getCurrencyNames(): Result<Map<String, String>, DataError.Network> {
-        return namesMutex.withLock {
-            if (cachedCurrencyNames.isNotEmpty()) return@withLock Result.Success(cachedCurrencyNames)
-            val result = getCurrenciesUseCase()
-            if (result is Result.Success) {
-                cachedCurrencyNames = result.data
+    private fun mapToState(
+        base: String,
+        currenciesResult: Result<Map<String, String>, DataError.Network>,
+        ratesResult: Result<ExchangeRatesResponse, DataError.Network>
+    ): ExchangeRateState {
+        return when {
+            currenciesResult is Result.Error -> ExchangeRateState.Error(currenciesResult.error, base)
+            ratesResult is Result.Error -> ExchangeRateState.Error(ratesResult.error, base)
+            currenciesResult is Result.Loading || ratesResult is Result.Loading -> {
+                if (currenciesResult is Result.Success && ratesResult is Result.Success) {
+                    createSuccessState(base, currenciesResult.data, ratesResult.data, isRefreshing = true)
+                } else {
+                    ExchangeRateState.Loading
+                }
             }
-            result
+            currenciesResult is Result.Success && ratesResult is Result.Success -> {
+                createSuccessState(base, currenciesResult.data, ratesResult.data, isRefreshing = false)
+            }
+            else -> ExchangeRateState.Loading
         }
+    }
+
+    private fun createSuccessState(
+        base: String,
+        currencyNames: Map<String, String>,
+        ratesResponse: ExchangeRatesResponse,
+        isRefreshing: Boolean
+    ): ExchangeRateState.Success {
+        val uiRates = ratesResponse.rates.map { (code, rate) ->
+            ExchangeRateUiModel(
+                code = code,
+                name = currencyNames[code] ?: "",
+                symbol = getCurrencySymbol(code),
+                rate = rate,
+                formattedRate = rate.toString()
+            )
+        }.toImmutableList()
+
+        return ExchangeRateState.Success(
+            base = ratesResponse.base,
+            rates = uiRates,
+            lastUpdated = ratesResponse.date,
+            isRefreshing = isRefreshing
+        )
     }
 
     fun fetchRates(base: String) {

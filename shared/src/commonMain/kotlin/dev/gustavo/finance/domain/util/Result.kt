@@ -3,12 +3,14 @@ package dev.gustavo.finance.domain.util
 sealed interface Result<out D, out E: Error> {
     data class Success<out D>(val data: D): Result<D, Nothing>
     data class Error<out E: dev.gustavo.finance.domain.util.Error>(val error: E): Result<Nothing, E>
+    data object Loading: Result<Nothing, Nothing>
 }
 
 inline fun <T, E: dev.gustavo.finance.domain.util.Error, R> Result<T, E>.map(transform: (T) -> R): Result<R, E> {
     return when(this) {
         is Result.Error -> Result.Error(error)
         is Result.Success -> Result.Success(transform(data))
+        is Result.Loading -> Result.Loading
     }
 }
 
@@ -16,6 +18,7 @@ inline fun <T, E: Error, R> Result<T, E>.flatMap(transform: (T) -> Result<R, E>)
     return when(this) {
         is Result.Error -> Result.Error(error)
         is Result.Success -> transform(data)
+        is Result.Loading -> Result.Loading
     }
 }
 
@@ -30,6 +33,7 @@ inline fun <T, E: dev.gustavo.finance.domain.util.Error> Result<T, E>.onSuccess(
             action(data)
             this
         }
+        is Result.Loading -> this
     }
 }
 inline fun <T, E: dev.gustavo.finance.domain.util.Error> Result<T, E>.onError(action: (E) -> Unit): Result<T, E> {
@@ -39,6 +43,7 @@ inline fun <T, E: dev.gustavo.finance.domain.util.Error> Result<T, E>.onError(ac
             this
         }
         is Result.Success -> this
+        is Result.Loading -> this
     }
 }
 
@@ -46,6 +51,7 @@ fun <T, E: Error> Result<T, E>.getOrNull(): T? {
     return when(this) {
         is Result.Error -> null
         is Result.Success -> data
+        is Result.Loading -> null
     }
 }
 

@@ -2,6 +2,7 @@ package dev.gustavo.finance.domain.usecase
 
 import dev.gustavo.finance.domain.util.DataError
 import dev.gustavo.finance.domain.util.Result
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -23,19 +24,21 @@ class GetCurrenciesUseCaseTest {
         val expected = mapOf("USD" to "United States Dollar", "EUR" to "Euro")
         repository.currenciesResult = expected
 
-        val result = getCurrenciesUseCase()
+        val results = getCurrenciesUseCase().toList()
 
-        assertTrue(result is Result.Success)
-        assertEquals(expected, result.data)
+        assertTrue(results[0] is Result.Loading)
+        assertTrue(results[1] is Result.Success)
+        assertEquals(expected, (results[1] as Result.Success).data)
     }
 
     @Test
     fun `invoke should return error when repository fails`() = runTest {
         repository.shouldThrow = true
 
-        val result = getCurrenciesUseCase()
+        val results = getCurrenciesUseCase().toList()
 
-        assertTrue(result is Result.Error)
-        assertEquals(DataError.Network.UNKNOWN, result.error)
+        assertTrue(results[0] is Result.Loading)
+        assertTrue(results[1] is Result.Error)
+        assertEquals(DataError.Network.UNKNOWN, (results[1] as Result.Error).error)
     }
 }

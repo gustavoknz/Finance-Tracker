@@ -3,6 +3,7 @@ package dev.gustavo.finance.domain.usecase
 import dev.gustavo.finance.domain.model.ExchangeRatesResponse
 import dev.gustavo.finance.domain.util.DataError
 import dev.gustavo.finance.domain.util.Result
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -29,19 +30,21 @@ class GetLatestRatesUseCaseTest {
         )
         repository.latestRatesResult = expected
 
-        val result = getLatestRatesUseCase("EUR")
+        val results = getLatestRatesUseCase("EUR").toList()
 
-        assertTrue(result is Result.Success)
-        assertEquals(expected, result.data)
+        assertTrue(results[0] is Result.Loading)
+        assertTrue(results[1] is Result.Success)
+        assertEquals(expected, (results[1] as Result.Success).data)
     }
 
     @Test
     fun `invoke should return error when repository fails`() = runTest {
         repository.shouldThrow = true
 
-        val result = getLatestRatesUseCase("EUR")
+        val results = getLatestRatesUseCase("EUR").toList()
 
-        assertTrue(result is Result.Error)
-        assertEquals(DataError.Network.UNKNOWN, result.error)
+        assertTrue(results[0] is Result.Loading)
+        assertTrue(results[1] is Result.Error)
+        assertEquals(DataError.Network.UNKNOWN, (results[1] as Result.Error).error)
     }
 }
