@@ -3,19 +3,23 @@ package dev.gustavo.finance.presentation.rates
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.gustavo.finance.domain.model.ExchangeRatesResponse
+import dev.gustavo.finance.domain.usecase.GetBaseCurrencyUseCase
 import dev.gustavo.finance.domain.usecase.GetCurrenciesUseCase
 import dev.gustavo.finance.domain.usecase.GetLatestRatesUseCase
-import dev.gustavo.finance.domain.usecase.GetBaseCurrencyUseCase
 import dev.gustavo.finance.domain.usecase.SetBaseCurrencyUseCase
 import dev.gustavo.finance.domain.util.DataError
 import dev.gustavo.finance.domain.util.Result
 import dev.gustavo.finance.util.getCurrencySymbol
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 
 sealed interface ExchangeRateState {
     data object Loading : ExchangeRateState
@@ -65,20 +69,19 @@ class ExchangeRateViewModel(
             ratesResult is Result.Error -> ExchangeRateState.Error(ratesResult.error, base)
             currenciesResult is Result.Loading || ratesResult is Result.Loading -> {
                 if (currenciesResult is Result.Success && ratesResult is Result.Success) {
-                    createSuccessState(base, currenciesResult.data, ratesResult.data, isRefreshing = true)
+                    createSuccessState(currenciesResult.data, ratesResult.data, isRefreshing = true)
                 } else {
                     ExchangeRateState.Loading
                 }
             }
             currenciesResult is Result.Success && ratesResult is Result.Success -> {
-                createSuccessState(base, currenciesResult.data, ratesResult.data, isRefreshing = false)
+                createSuccessState(currenciesResult.data, ratesResult.data, isRefreshing = false)
             }
             else -> ExchangeRateState.Loading
         }
     }
 
     private fun createSuccessState(
-        base: String,
         currencyNames: Map<String, String>,
         ratesResponse: ExchangeRatesResponse,
         isRefreshing: Boolean
