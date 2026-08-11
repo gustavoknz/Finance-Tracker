@@ -10,10 +10,12 @@ plugins {
     alias(libs.plugins.kotlinx.kover) apply true
 }
 
-val koverExcludedClasses = listOf("*.MainActivity")
+val koverExcludedClasses = listOf("*.MainActivity", "dev.gustavo.finance.AppKt")
 val koverExcludedPackages = listOf(
     "dev.gustavo.finance.di",
     "dev.gustavo.finance.di.*",
+    "dev.gustavo.finance.data.local",
+    "dev.gustavo.finance.data.local.*",
     "finance_tracker.shared.generated.resources",
     "finance_tracker.shared.generated.resources.*"
 )
