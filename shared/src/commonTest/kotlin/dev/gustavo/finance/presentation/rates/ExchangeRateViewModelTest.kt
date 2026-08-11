@@ -162,4 +162,33 @@ class ExchangeRateViewModelTest {
         assertTrue(refreshingState.isRefreshing)
         assertEquals("USD", refreshingState.base) // Should still show old base while refreshing new one
     }
+
+    @Test
+    fun `onSearchQueryChange should filter rates`() = runTest {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.state.collect {} }
+
+        repository.currenciesResult = mapOf("USD" to "Dollar", "EUR" to "Euro", "BRL" to "Real")
+        repository.latestRatesResult = ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08, "BRL" to 5.5))
+        viewModel.fetchRates("EUR")
+        
+        val initialState = viewModel.state.value as ExchangeRateState.Success
+        assertEquals(2, initialState.rates.size)
+
+        // Filter by code
+        viewModel.onSearchQueryChange("US")
+        val filteredByCode = viewModel.state.value as ExchangeRateState.Success
+        assertEquals(1, filteredByCode.rates.size)
+        assertEquals("USD", filteredByCode.rates[0].code)
+
+        // Filter by name
+        viewModel.onSearchQueryChange("Real")
+        val filteredByName = viewModel.state.value as ExchangeRateState.Success
+        assertEquals(1, filteredByName.rates.size)
+        assertEquals("BRL", filteredByName.rates[0].code)
+
+        // Clear filter
+        viewModel.onSearchQueryChange("")
+        val clearedFilter = viewModel.state.value as ExchangeRateState.Success
+        assertEquals(2, clearedFilter.rates.size)
+    }
 }

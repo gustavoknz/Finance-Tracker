@@ -21,7 +21,9 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -60,6 +62,7 @@ class ExchangeRateScreen : Screen {
     override fun Content() {
         val viewModel = koinViewModel<ExchangeRateViewModel>()
         val state by viewModel.state.collectAsStateWithLifecycle()
+        val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
 
         Scaffold(
             topBar = {
@@ -82,6 +85,8 @@ class ExchangeRateScreen : Screen {
                                 base = currentState.base,
                                 rates = currentState.rates,
                                 lastUpdated = currentState.lastUpdated,
+                                searchQuery = searchQuery,
+                                onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
                                 onRateClick = { currency -> viewModel.fetchRates(currency) }
                             )
                         }
@@ -133,6 +138,8 @@ class ExchangeRateScreen : Screen {
         base: String,
         rates: ImmutableList<ExchangeRateUiModel>,
         lastUpdated: String,
+        searchQuery: String,
+        onSearchQueryChange: (String) -> Unit,
         onRateClick: (String) -> Unit
     ) {
         var clickedCurrency by remember { mutableStateOf<String?>(null) }
@@ -158,8 +165,26 @@ class ExchangeRateScreen : Screen {
                     color = MaterialTheme.colorScheme.secondary
                 )
             }
+
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = onSearchQueryChange,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                placeholder = { Text("Search currencies...") },
+                leadingIcon = { Text("🔍") },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { onSearchQueryChange("") }) {
+                            Text("✕")
+                        }
+                    }
+                },
+                singleLine = true,
+                shape = MaterialTheme.shapes.medium
+            )
+
             LazyColumn(
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(rates, key = { it.code }) { uiModel ->

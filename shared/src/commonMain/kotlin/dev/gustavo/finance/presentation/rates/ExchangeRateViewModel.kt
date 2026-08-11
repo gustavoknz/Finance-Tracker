@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.onEach
@@ -46,6 +47,8 @@ class ExchangeRateViewModel(
 
     private val _currentBase = MutableStateFlow(getBaseCurrencyUseCase())
     private val _refreshTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery = _searchQuery.asStateFlow()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val state: StateFlow<ExchangeRateState> = combine(
@@ -65,6 +68,18 @@ class ExchangeRateViewModel(
                 previous.copy(isRefreshing = true)
             } else {
                 current
+            }
+        }
+        .combine(_searchQuery) { currentState, query ->
+            if (currentState is ExchangeRateState.Success && query.isNotBlank()) {
+                currentState.copy(
+                    rates = currentState.rates.filter {
+                        it.code.contains(query, ignoreCase = true) ||
+                                it.name.contains(query, ignoreCase = true)
+                    }.toImmutableList()
+                )
+            } else {
+                currentState
             }
         }
         .stateIn(
@@ -112,6 +127,10 @@ class ExchangeRateViewModel(
 
     fun fetchRates(base: String) {
         _currentBase.value = base
+    }
+
+    fun onSearchQueryChange(query: String) {
+        _searchQuery.value = query
     }
 
     fun refresh() {
