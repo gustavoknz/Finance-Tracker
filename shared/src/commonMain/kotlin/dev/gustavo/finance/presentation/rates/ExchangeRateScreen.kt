@@ -1,23 +1,56 @@
 package dev.gustavo.finance.presentation.rates
 
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.*
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cafe.adriel.voyager.core.screen.Screen
-import finance_tracker.shared.generated.resources.Res
-import finance_tracker.shared.generated.resources.*
 import dev.gustavo.finance.domain.util.DataError
-import org.jetbrains.compose.resources.stringResource
+import finance_tracker.shared.generated.resources.Res
+import finance_tracker.shared.generated.resources.base_currency_label
+import finance_tracker.shared.generated.resources.error_client
+import finance_tracker.shared.generated.resources.error_network
+import finance_tracker.shared.generated.resources.error_server
+import finance_tracker.shared.generated.resources.error_service_unavailable
+import finance_tracker.shared.generated.resources.error_unknown
+import finance_tracker.shared.generated.resources.exchange_rates_title
+import finance_tracker.shared.generated.resources.last_updated_label
+import finance_tracker.shared.generated.resources.retry_button
 import kotlinx.collections.immutable.ImmutableList
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
 
@@ -41,15 +74,15 @@ class ExchangeRateScreen : Screen {
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                     }
                     is ExchangeRateState.Success -> {
-                        RateList(
-                            base = currentState.base,
-                            rates = currentState.rates,
-                            lastUpdated = currentState.lastUpdated,
-                            onRateClick = { currency -> viewModel.fetchRates(currency) }
-                        )
-                        if (currentState.isRefreshing) {
-                            LinearProgressIndicator(
-                                modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter)
+                        PullToRefreshBox(
+                            isRefreshing = currentState.isRefreshing,
+                            onRefresh = { viewModel.refresh() }
+                        ) {
+                            RateList(
+                                base = currentState.base,
+                                rates = currentState.rates,
+                                lastUpdated = currentState.lastUpdated,
+                                onRateClick = { currency -> viewModel.fetchRates(currency) }
                             )
                         }
                     }

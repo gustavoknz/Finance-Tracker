@@ -1,5 +1,6 @@
 package dev.gustavo.finance.presentation.rates
 
+import androidx.compose.material3.Text
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithText
@@ -23,11 +24,11 @@ class ExchangeRateUiTest {
                 symbol = "$",
                 rate = 1.0,
                 formattedRate = "1.00"
-            ).let { uiModel ->
+            ).let { _ ->
                 // Since RateItem is private, we can't test it directly easily 
                 // unless we make it internal or test through a public entry point.
                 // For now, let's just test that we can render a simple Text.
-                androidx.compose.material3.Text("USD ($)")
+                Text("USD ($)")
             }
         }
 

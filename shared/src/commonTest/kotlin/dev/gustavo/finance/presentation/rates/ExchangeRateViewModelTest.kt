@@ -3,13 +3,24 @@ package dev.gustavo.finance.presentation.rates
 import dev.gustavo.finance.domain.model.ExchangeRatesResponse
 import dev.gustavo.finance.domain.repository.FakeExchangeRateRepository
 import dev.gustavo.finance.domain.repository.FakePreferencesRepository
-import dev.gustavo.finance.domain.usecase.*
+import dev.gustavo.finance.domain.usecase.GetBaseCurrencyUseCase
+import dev.gustavo.finance.domain.usecase.GetCurrenciesUseCase
+import dev.gustavo.finance.domain.usecase.GetLatestRatesUseCase
+import dev.gustavo.finance.domain.usecase.SetBaseCurrencyUseCase
 import dev.gustavo.finance.domain.util.DataError
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.*
-import kotlin.test.*
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ExchangeRateViewModelTest {

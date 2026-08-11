@@ -13,14 +13,17 @@ import dev.gustavo.finance.util.getCurrencySymbol
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 sealed interface ExchangeRateState {
     data object Loading : ExchangeRateState
@@ -42,9 +45,13 @@ class ExchangeRateViewModel(
 ) : ViewModel() {
 
     private val _currentBase = MutableStateFlow(getBaseCurrencyUseCase())
+    private val _refreshTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val state: StateFlow<ExchangeRateState> = _currentBase
+    val state: StateFlow<ExchangeRateState> = combine(
+        _currentBase,
+        _refreshTrigger.onStart { emit(Unit) }
+    ) { base, _ -> base }
         .onEach { setBaseCurrencyUseCase(it) }
         .flatMapLatest { base ->
             combine(
@@ -105,5 +112,11 @@ class ExchangeRateViewModel(
 
     fun fetchRates(base: String) {
         _currentBase.value = base
+    }
+
+    fun refresh() {
+        viewModelScope.launch {
+            _refreshTrigger.emit(Unit)
+        }
     }
 }

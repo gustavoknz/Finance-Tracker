@@ -11,9 +11,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -24,11 +22,6 @@ class KtorCurrencyServiceTest {
     private lateinit var service: KtorCurrencyService
 
     private val json = Json { ignoreUnknownKeys = true }
-
-    @BeforeTest
-    fun setUp() {
-        // We'll configure the engine per test to respond differently
-    }
 
     @Test
     fun `getLatestRates should return parsed response`() = runTest {

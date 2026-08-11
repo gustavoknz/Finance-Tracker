@@ -6,7 +6,7 @@ sealed interface Result<out D, out E: Error> {
     data object Loading: Result<Nothing, Nothing>
 }
 
-inline fun <T, E: dev.gustavo.finance.domain.util.Error, R> Result<T, E>.map(transform: (T) -> R): Result<R, E> {
+inline fun <T, E: Error, R> Result<T, E>.map(transform: (T) -> R): Result<R, E> {
     return when(this) {
         is Result.Error -> Result.Error(error)
         is Result.Success -> Result.Success(transform(data))
@@ -22,11 +22,11 @@ inline fun <T, E: Error, R> Result<T, E>.flatMap(transform: (T) -> Result<R, E>)
     }
 }
 
-fun <T, E: dev.gustavo.finance.domain.util.Error> Result<T, E>.asEmptyData(): Result<Unit, E> {
+fun <T, E: Error> Result<T, E>.asEmptyData(): Result<Unit, E> {
     return map {  }
 }
 
-inline fun <T, E: dev.gustavo.finance.domain.util.Error> Result<T, E>.onSuccess(action: (T) -> Unit): Result<T, E> {
+inline fun <T, E: Error> Result<T, E>.onSuccess(action: (T) -> Unit): Result<T, E> {
     return when(this) {
         is Result.Error -> this
         is Result.Success -> {
@@ -36,7 +36,7 @@ inline fun <T, E: dev.gustavo.finance.domain.util.Error> Result<T, E>.onSuccess(
         is Result.Loading -> this
     }
 }
-inline fun <T, E: dev.gustavo.finance.domain.util.Error> Result<T, E>.onError(action: (E) -> Unit): Result<T, E> {
+inline fun <T, E: Error> Result<T, E>.onError(action: (E) -> Unit): Result<T, E> {
     return when(this) {
         is Result.Error -> {
             action(error)
@@ -54,5 +54,3 @@ fun <T, E: Error> Result<T, E>.getOrNull(): T? {
         is Result.Loading -> null
     }
 }
-
-typealias DomainResult<D> = Result<D, DataError>

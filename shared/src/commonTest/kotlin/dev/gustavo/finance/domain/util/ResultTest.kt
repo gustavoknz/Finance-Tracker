@@ -1,6 +1,10 @@
 package dev.gustavo.finance.domain.util
 
-import kotlin.test.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class ResultTest {
 
