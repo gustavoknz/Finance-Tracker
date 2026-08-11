@@ -13,6 +13,10 @@ class FakeExchangeRateDao : ExchangeRateDao {
         return ratesFlow.map { list -> list.filter { it.baseCode == baseCode } }
     }
 
+    override suspend fun getRatesByBaseOnce(baseCode: String): List<ExchangeRateEntity> {
+        return ratesFlow.value.filter { it.baseCode == baseCode }
+    }
+
     override suspend fun insertRates(rates: List<ExchangeRateEntity>) {
         val current = ratesFlow.value.toMutableList()
         // Simple mock of REPLACE strategy

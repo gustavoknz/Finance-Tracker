@@ -8,6 +8,9 @@ interface CurrencyDao {
     @Query("SELECT * FROM CurrencyEntity")
     fun getAllCurrencies(): Flow<List<CurrencyEntity>>
 
+    @Query("SELECT * FROM CurrencyEntity")
+    suspend fun getAllCurrenciesOnce(): List<CurrencyEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCurrencies(currencies: List<CurrencyEntity>)
 

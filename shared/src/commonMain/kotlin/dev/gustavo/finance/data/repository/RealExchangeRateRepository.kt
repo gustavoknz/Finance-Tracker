@@ -43,14 +43,14 @@ class RealExchangeRateRepository(
                 }
                 exchangeRateDao.insertRates(entities)
             } catch (e: Exception) {
-                if (exchangeRateDao.getRatesByBase(base).first().isEmpty()) {
+                if (exchangeRateDao.getRatesByBaseOnce(base).isEmpty()) {
                     send(Result.Error(e.toDataError()))
                 }
             }
         }
 
         exchangeRateDao.getRatesByBase(base)
-            .map { entities ->
+            .mapNotNull { entities ->
                 if (entities.isNotEmpty()) {
                     Result.Success(
                         ExchangeRatesResponse(
@@ -62,7 +62,6 @@ class RealExchangeRateRepository(
                     )
                 } else null
             }
-            .filterNotNull()
             .collect { send(it) }
     }.distinctUntilChanged()
 
@@ -88,19 +87,18 @@ class RealExchangeRateRepository(
                     metadataDao.insertMetadata(MetadataEntity("currencies", currentTimeMillis))
                 }
             } catch (e: Exception) {
-                if (currencyDao.getAllCurrencies().first().isEmpty()) {
+                if (currencyDao.getAllCurrenciesOnce().isEmpty()) {
                     send(Result.Error(e.toDataError()))
                 }
             }
         }
 
         currencyDao.getAllCurrencies()
-            .map { entities ->
+            .mapNotNull { entities ->
                 if (entities.isNotEmpty()) {
                     Result.Success(entities.associate { it.code to it.name })
                 } else null
             }
-            .filterNotNull()
             .collect { send(it) }
     }.distinctUntilChanged()
 }

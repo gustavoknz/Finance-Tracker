@@ -10,6 +10,8 @@ class FakeCurrencyDao : CurrencyDao {
 
     override fun getAllCurrencies(): Flow<List<CurrencyEntity>> = currenciesFlow
 
+    override suspend fun getAllCurrenciesOnce(): List<CurrencyEntity> = currenciesFlow.value
+
     override suspend fun insertCurrencies(currencies: List<CurrencyEntity>) {
         currenciesFlow.value = currencies
     }
