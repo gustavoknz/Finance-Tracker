@@ -8,6 +8,7 @@ A simple Currency Tracker application built with **Kotlin Multiplatform (KMP)** 
 - **Offline Support**: Powered by **Jetpack Room**, the app caches rates and currency names locally, allowing users to view data even without an internet connection.
 - **Smart Caching**: Implements a 24-hour Time-To-Live (TTL) mechanism to ensure the local cache stays fresh while minimizing redundant network calls.
 - **Multi-platform UI**: Shared UI components using Compose Multiplatform.
+- **Swipe-to-Refresh**: Easily update exchange rates with a standard pull-to-refresh gesture.
 - **Navigation**: Fluid screen transitions using **Voyager**.
 
 ## 🏗️ Architecture & Best Practices
