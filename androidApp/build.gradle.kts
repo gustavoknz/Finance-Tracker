@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinx.kover)
+    alias(libs.plugins.detekt)
 }
 
 kotlin {

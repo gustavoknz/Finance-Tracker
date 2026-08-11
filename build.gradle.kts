@@ -8,6 +8,14 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform) apply false
     alias(libs.plugins.kotlinSerialization) apply false
     alias(libs.plugins.kotlinx.kover) apply true
+    alias(libs.plugins.detekt) apply true
+}
+
+detekt {
+    toolVersion = libs.versions.detekt.get()
+    config.setFrom(file("config/detekt/detekt.yml"))
+    parallel = true
+    buildUponDefaultConfig = true
 }
 
 val koverExcludedClasses = listOf("*.MainActivity", "dev.gustavo.finance.AppKt")

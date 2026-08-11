@@ -1,0 +1,119 @@
+build:
+  maxIssues: 0
+  excludeCorrectable: false
+
+config:
+  validation: true
+  warningsAsErrors: false
+  checkExhaustiveness: false
+
+complexity:
+  active: true
+  ComplexCondition:
+    active: true
+    threshold: 4
+  ComplexInterface:
+    active: true
+    threshold: 10
+    includeStaticDeclarations: false
+    includePrivateDeclarations: false
+  CyclomaticComplexMethod:
+    active: true
+    threshold: 15
+    ignoreNestingFunctions: false
+    nestingFunctions:
+      - 'also'
+      - 'apply'
+      - 'forEach'
+      - 'isNotNull'
+      - 'let'
+      - 'run'
+      - 'use'
+      - 'with'
+  LargeClass:
+    active: true
+    threshold: 600
+  LongMethod:
+    active: true
+    threshold: 60
+  LongParameterList:
+    active: true
+    functionThreshold: 6
+    constructorThreshold: 7
+    ignoreDefaultParameters: false
+    ignoreDataClasses: true
+  MethodOverloading:
+    active: true
+    threshold: 6
+  NestedBlockDepth:
+    active: true
+    threshold: 4
+  StringLiteralDuplication:
+    active: true
+    threshold: 3
+    ignoreAnnotation: true
+    ignoreStringsRegex: '$^'
+  TooManyFunctions:
+    active: true
+    thresholdInFiles: 20
+    thresholdInClasses: 20
+    thresholdInInterfaces: 20
+    thresholdInObjects: 20
+    thresholdInEnums: 20
+
+coroutines:
+  active: true
+  GlobalCoroutineUsage:
+    active: true
+  SuspendFunWithFlowReturnType:
+    active: true
+
+naming:
+  active: true
+  ClassNaming:
+    active: true
+    classPattern: '[A-Z][a-zA-Z0-9]*'
+  FunctionNaming:
+    active: true
+    functionPattern: '[a-z][a-zA-Z0-9]*'
+    excludeClassPattern: '$^'
+    ignoreAnnotated:
+      - 'androidx.compose.runtime.Composable'
+  PackageNaming:
+    active: true
+    packagePattern: '[a-z]+(\.[a-z][A-Za-z0-9]*)*'
+  VariableNaming:
+    active: true
+    variablePattern: '[a-z][a-zA-Z0-9]*'
+    privateVariablePattern: '(_)?[a-z][a-zA-Z0-9]*'
+    excludeClassPattern: '$^'
+
+performance:
+  active: true
+  ArrayPrimitive:
+    active: true
+  SpreadOperator:
+    active: true
+
+style:
+  active: true
+  MagicNumber:
+    active: true
+    ignoreNumbers:
+      - '-1'
+      - '0'
+      - '1'
+      - '2'
+    ignoreHashCodeFunction: true
+    ignoreLocalVariableDeclaration: false
+    ignoreConstantDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreAnnotation: true
+    ignoreNamedArgument: true
+    ignoreEnums: true
+    ignoreRanges: false
+    ignorePropertyDeclaration: true
+  UnusedImports:
+    active: true
+  WildcardImport:
+    active: true
