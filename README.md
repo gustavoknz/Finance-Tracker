@@ -1,5 +1,7 @@
 # Currency Tracker - Kotlin Multiplatform
 
+![CI](https://github.com/gustavoknz/Finance-Tracker/actions/workflows/ci.yml/badge.svg)
+
 A simple Currency Tracker application built with **Kotlin Multiplatform (KMP)** and **Compose Multiplatform**, targeting Android and iOS.
 
 ## 🚀 Features

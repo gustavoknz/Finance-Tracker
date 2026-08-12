@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test-android:
+    name: Android & Common Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Grant Execute Permission for Gradlew
+        run: chmod +x gradlew
+
+      - name: Run Detekt
+        run: ./gradlew detekt
+
+      - name: Run Android Host-side Tests (including Shared Common)
+        run: ./gradlew :shared:testAndroidHostTest
+
+      - name: Run Android App Unit Tests
+        run: ./gradlew :androidApp:testDebugUnitTest
+
+  # Note: iOS tests require a macOS runner and can be expensive in terms of CI minutes.
+  # build-and-test-ios:
+  #   name: iOS Tests
+  #   runs-on: macos-latest
+  #   steps:
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Set up JDK 17
+  #       uses: actions/setup-java@v4
+  #       with:
+  #         java-version: '17'
+  #         distribution: 'temurin'
+  #         cache: 'gradle'
+  #
+  #     - name: Grant Execute Permission for Gradlew
+  #       run: chmod +x gradlew
+  #
+  #     - name: Run iOS Simulator Tests
+  #       run: ./gradlew :shared:iosSimulatorArm64Test
