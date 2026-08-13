@@ -37,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cafe.adriel.voyager.core.screen.Screen
@@ -52,6 +53,7 @@ import finance_tracker.shared.generated.resources.exchange_rates_title
 import finance_tracker.shared.generated.resources.last_updated_label
 import finance_tracker.shared.generated.resources.retry_button
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
@@ -76,6 +78,7 @@ class ExchangeRateScreen : Screen {
                     is ExchangeRateState.Loading -> {
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                     }
+
                     is ExchangeRateState.Success -> {
                         PullToRefreshBox(
                             isRefreshing = currentState.isRefreshing,
@@ -91,6 +94,7 @@ class ExchangeRateScreen : Screen {
                             )
                         }
                     }
+
                     is ExchangeRateState.Error -> {
                         ErrorView(
                             error = currentState.error,
@@ -103,7 +107,7 @@ class ExchangeRateScreen : Screen {
     }
 
     @Composable
-    private fun ErrorView(
+    internal fun ErrorView(
         error: DataError.Network,
         onRetry: () -> Unit
     ) {
@@ -134,7 +138,7 @@ class ExchangeRateScreen : Screen {
     }
 
     @Composable
-    private fun RateList(
+    internal fun RateList(
         base: String,
         rates: ImmutableList<ExchangeRateUiModel>,
         lastUpdated: String,
@@ -189,7 +193,7 @@ class ExchangeRateScreen : Screen {
             ) {
                 items(rates, key = { it.code }) { uiModel ->
                     val isClicked = uiModel.code == clickedCurrency
-                    
+
                     AnimatedVisibility(
                         visible = !isClicked,
                         exit = fadeOut(tween(500)) + slideOutVertically(tween(500)) { -it },
@@ -210,7 +214,7 @@ class ExchangeRateScreen : Screen {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    private fun RateItem(
+    internal fun RateItem(
         uiModel: ExchangeRateUiModel,
         onClick: () -> Unit,
         modifier: Modifier = Modifier
@@ -252,5 +256,51 @@ class ExchangeRateScreen : Screen {
                 )
             }
         }
+    }
+}
+
+@Preview
+@Composable
+internal fun RateItemPreview() {
+    MaterialTheme {
+        ExchangeRateScreen().RateItem(
+            uiModel = ExchangeRateUiModel(
+                code = "USD",
+                name = "United States Dollar",
+                symbol = "$",
+                rate = 1.0,
+                formattedRate = "1.00"
+            ),
+            onClick = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+internal fun ErrorViewPreview() {
+    MaterialTheme {
+        ExchangeRateScreen().ErrorView(
+            error = DataError.Network.NO_INTERNET,
+            onRetry = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+internal fun RateListPreview() {
+    MaterialTheme {
+        ExchangeRateScreen().RateList(
+            base = "EUR",
+            rates = persistentListOf(
+                ExchangeRateUiModel("USD", "Dollar", "$", 1.08, "1.08"),
+                ExchangeRateUiModel("GBP", "Pound", "£", 0.85, "0.85")
+            ),
+            lastUpdated = "2024-05-20",
+            searchQuery = "",
+            onSearchQueryChange = {},
+            onRateClick = {}
+        )
     }
 }

@@ -11,6 +11,8 @@ A simple Currency Tracker application built with **Kotlin Multiplatform (KMP)** 
 - **Smart Caching**: Implements a 24-hour Time-To-Live (TTL) mechanism to ensure the local cache stays fresh while minimizing redundant network calls.
 - **Multi-platform UI**: Shared UI components using Compose Multiplatform.
 - **Swipe-to-Refresh**: Easily update exchange rates with a standard pull-to-refresh gesture.
+- **Search Bar**: Quickly find any currency in the long list.
+- **Integrated Previews**: All UI components now include Compose Previews directly in their source files for faster development.
 - **Navigation**: Fluid screen transitions using **Voyager**.
 
 ## 🏗️ Architecture & Best Practices

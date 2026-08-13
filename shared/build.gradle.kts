@@ -26,7 +26,7 @@ kotlin {
             isStatic = true
         }
     }
-    
+
     android {
        namespace = "dev.gustavo.finance.shared"
        compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -90,7 +90,6 @@ kotlin {
             implementation(libs.androidx.room.runtime)
             implementation(libs.sqlite.bundled)
             
-            // Settings
             implementation(libs.multiplatform.settings)
         }
         commonTest.dependencies {
@@ -111,7 +110,6 @@ kotlin {
 
 dependencies {
     androidRuntimeClasspath(libs.compose.uiTooling)
-    add("kspCommonMainMetadata", libs.androidx.room.compiler)
     add("kspAndroid", libs.androidx.room.compiler)
     add("kspIosArm64", libs.androidx.room.compiler)
     add("kspIosSimulatorArm64", libs.androidx.room.compiler)

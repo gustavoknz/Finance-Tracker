@@ -24,9 +24,9 @@ class MainActivity : ComponentActivity() {
 @Preview
 @Composable
 fun AppAndroidPreview() {
-    KoinApplication(
-        configuration = koinConfiguration { modules(appModule) }
-    ) {
+    KoinApplication(configuration = koinConfiguration {
+        modules(appModule)
+    }) {
         App()
     }
 }
