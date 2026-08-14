@@ -4,10 +4,32 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,9 +48,27 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cafe.adriel.voyager.core.screen.Screen
 import dev.gustavo.finance.domain.util.DataError
-import finance_tracker.shared.generated.resources.*
+import finance_tracker.shared.generated.resources.Res
+import finance_tracker.shared.generated.resources.all_currencies_header
+import finance_tracker.shared.generated.resources.base_currency_label
+import finance_tracker.shared.generated.resources.clear_search_description
+import finance_tracker.shared.generated.resources.currency_card_content_description
+import finance_tracker.shared.generated.resources.error_client
+import finance_tracker.shared.generated.resources.error_network
+import finance_tracker.shared.generated.resources.error_server
+import finance_tracker.shared.generated.resources.error_service_unavailable
+import finance_tracker.shared.generated.resources.error_unknown
+import finance_tracker.shared.generated.resources.exchange_rates_title
+import finance_tracker.shared.generated.resources.last_updated_label
+import finance_tracker.shared.generated.resources.offline_notification
+import finance_tracker.shared.generated.resources.pin_content_description
+import finance_tracker.shared.generated.resources.pinned_header
+import finance_tracker.shared.generated.resources.retry_button
+import finance_tracker.shared.generated.resources.search_placeholder
+import finance_tracker.shared.generated.resources.unpin_content_description
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.flow.collectLatest
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
@@ -40,8 +80,24 @@ class ExchangeRateScreen : Screen {
         val viewModel = koinViewModel<ExchangeRateViewModel>()
         val state by viewModel.state.collectAsStateWithLifecycle()
         val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+        val snackbarHostState = remember { SnackbarHostState() }
+        val offlineMessage = stringResource(Res.string.offline_notification)
+
+        LaunchedEffect(Unit) {
+            viewModel.uiEvents.collectLatest { event ->
+                when (event) {
+                    ExchangeRateUiEvent.ShowOfflineNotification -> {
+                        snackbarHostState.showSnackbar(
+                            message = offlineMessage,
+                            duration = SnackbarDuration.Short
+                        )
+                    }
+                }
+            }
+        }
 
         Scaffold(
+            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
             topBar = {
                 TopAppBar(
                     title = { Text(stringResource(Res.string.exchange_rates_title)) }

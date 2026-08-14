@@ -3,7 +3,12 @@ package dev.gustavo.finance.presentation.rates
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.gustavo.finance.domain.model.ExchangeRatesResponse
-import dev.gustavo.finance.domain.usecase.*
+import dev.gustavo.finance.domain.usecase.GetBaseCurrencyUseCase
+import dev.gustavo.finance.domain.usecase.GetCurrenciesUseCase
+import dev.gustavo.finance.domain.usecase.GetLatestRatesUseCase
+import dev.gustavo.finance.domain.usecase.GetPinnedCurrenciesUseCase
+import dev.gustavo.finance.domain.usecase.SetBaseCurrencyUseCase
+import dev.gustavo.finance.domain.usecase.TogglePinUseCase
 import dev.gustavo.finance.domain.util.DataError
 import dev.gustavo.finance.domain.util.Result
 import dev.gustavo.finance.util.format
@@ -11,7 +16,18 @@ import dev.gustavo.finance.util.getCurrencySymbol
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.scan
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 sealed interface ExchangeRateState {
@@ -21,7 +37,8 @@ sealed interface ExchangeRateState {
         val pinnedRates: ImmutableList<ExchangeRateUiModel>,
         val otherRates: ImmutableList<ExchangeRateUiModel>,
         val lastUpdated: String,
-        val isRefreshing: Boolean = false
+        val isRefreshing: Boolean = false,
+        val syncError: DataError.Network? = null
     ) : ExchangeRateState
 
     data class Error(val error: DataError.Network, val base: String) : ExchangeRateState
@@ -41,6 +58,9 @@ class ExchangeRateViewModel(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
 
+    private val _uiEvents = MutableSharedFlow<ExchangeRateUiEvent>()
+    val uiEvents = _uiEvents.asSharedFlow()
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val state: StateFlow<ExchangeRateState> = combine(
         _currentBase,
@@ -56,10 +76,18 @@ class ExchangeRateViewModel(
                 mapToState(base, currenciesResult, ratesResult, pinnedCodes)
             }
         }.scan(ExchangeRateState.Loading as ExchangeRateState) { previous, current ->
-            if (current is ExchangeRateState.Loading && previous is ExchangeRateState.Success) {
-                previous.copy(isRefreshing = true)
-            } else {
-                current
+            when {
+                current is ExchangeRateState.Loading && previous is ExchangeRateState.Success -> {
+                    previous.copy(isRefreshing = true, syncError = null)
+                }
+                current is ExchangeRateState.Error && previous is ExchangeRateState.Success -> {
+                    // Non-blocking error: keep showing data but notify user
+                    viewModelScope.launch {
+                        _uiEvents.emit(ExchangeRateUiEvent.ShowOfflineNotification)
+                    }
+                    previous.copy(isRefreshing = false, syncError = current.error)
+                }
+                else -> current
             }
         }
         .combine(_searchQuery) { currentState, query ->
@@ -147,4 +175,8 @@ class ExchangeRateViewModel(
             togglePinUseCase(code)
         }
     }
+}
+
+sealed interface ExchangeRateUiEvent {
+    data object ShowOfflineNotification : ExchangeRateUiEvent
 }

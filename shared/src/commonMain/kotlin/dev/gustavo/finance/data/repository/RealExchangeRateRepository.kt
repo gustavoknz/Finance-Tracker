@@ -14,7 +14,11 @@ import dev.gustavo.finance.domain.model.ExchangeRatesResponse
 import dev.gustavo.finance.domain.repository.ExchangeRateRepository
 import dev.gustavo.finance.domain.util.DataError
 import dev.gustavo.finance.domain.util.Result
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
 
@@ -46,9 +50,7 @@ class RealExchangeRateRepository(
                 }
                 exchangeRateDao.insertRates(entities)
             } catch (e: Exception) {
-                if (exchangeRateDao.getRatesByBaseOnce(base).isEmpty()) {
-                    send(Result.Error(e.toDataError()))
-                }
+                send(Result.Error(e.toDataError()))
             }
         }
 
@@ -90,9 +92,7 @@ class RealExchangeRateRepository(
                     metadataDao.insertMetadata(MetadataEntity("currencies", currentTimeMillis))
                 }
             } catch (e: Exception) {
-                if (currencyDao.getAllCurrenciesOnce().isEmpty()) {
-                    send(Result.Error(e.toDataError()))
-                }
+                send(Result.Error(e.toDataError()))
             }
         }
 

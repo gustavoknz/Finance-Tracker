@@ -1,7 +1,7 @@
 package dev.gustavo.finance.data.mapper
 
 import dev.gustavo.finance.domain.util.DataError
-import io.ktor.client.plugins.*
+import io.ktor.client.plugins.ResponseException
 import io.ktor.http.HttpStatusCode
 import kotlinx.io.IOException
 

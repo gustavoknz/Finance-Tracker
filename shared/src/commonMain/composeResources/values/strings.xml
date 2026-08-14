@@ -16,4 +16,5 @@
     <string name="all_currencies_header">All currencies</string>
     <string name="search_placeholder">Search currencies…</string>
     <string name="clear_search_description">Clear search query</string>
+    <string name="offline_notification">You are offline. Showing cached data.</string>
 </resources>

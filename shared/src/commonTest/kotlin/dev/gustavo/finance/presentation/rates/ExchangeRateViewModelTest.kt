@@ -3,7 +3,12 @@ package dev.gustavo.finance.presentation.rates
 import dev.gustavo.finance.domain.model.ExchangeRatesResponse
 import dev.gustavo.finance.domain.repository.FakeExchangeRateRepository
 import dev.gustavo.finance.domain.repository.FakePreferencesRepository
-import dev.gustavo.finance.domain.usecase.*
+import dev.gustavo.finance.domain.usecase.GetBaseCurrencyUseCase
+import dev.gustavo.finance.domain.usecase.GetCurrenciesUseCase
+import dev.gustavo.finance.domain.usecase.GetLatestRatesUseCase
+import dev.gustavo.finance.domain.usecase.GetPinnedCurrenciesUseCase
+import dev.gustavo.finance.domain.usecase.SetBaseCurrencyUseCase
+import dev.gustavo.finance.domain.usecase.TogglePinUseCase
 import dev.gustavo.finance.domain.util.DataError
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -156,6 +161,35 @@ class ExchangeRateViewModelTest {
         assertTrue(refreshingState is ExchangeRateState.Success, "Expected Success (refreshing) but was $refreshingState")
         assertTrue(refreshingState.isRefreshing)
         assertEquals("USD", refreshingState.base) 
+    }
+
+    @Test
+    fun `sync error should emit UI event and maintain Success state`() = runTest {
+        // 1. Initial success
+        repository.currenciesResult = mapOf("USD" to "Dollar")
+        repository.latestRatesResult = ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08))
+        
+        val events = mutableListOf<ExchangeRateUiEvent>()
+        val eventJob = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiEvents.collect { events.add(it) }
+        }
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.state.collect {}
+        }
+
+        viewModel.fetchRates("EUR")
+
+        // 2. Trigger error while already having data
+        repository.shouldThrow = true
+        viewModel.refresh()
+
+        val state = viewModel.state.value
+        assertTrue(state is ExchangeRateState.Success)
+        assertEquals(DataError.Network.UNKNOWN, state.syncError)
+        assertEquals(1, events.size)
+        assertTrue(events[0] is ExchangeRateUiEvent.ShowOfflineNotification)
+        
+        eventJob.cancel()
     }
 
     @Test
