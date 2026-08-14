@@ -49,25 +49,29 @@ class RealExchangeRateRepository(
                     )
                 }
                 exchangeRateDao.insertRates(entities)
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 send(Result.Error(e.toDataError()))
             }
         }
 
-        exchangeRateDao.getRatesByBase(base)
-            .mapNotNull { entities ->
-                if (entities.isNotEmpty()) {
-                    Result.Success(
-                        ExchangeRatesResponse(
-                            amount = 1.0,
-                            base = base,
-                            date = entities.first().date,
-                            rates = entities.associate { it.targetCode to it.rate }
+        try {
+            exchangeRateDao.getRatesByBase(base)
+                .mapNotNull { entities ->
+                    if (entities.isNotEmpty()) {
+                        Result.Success(
+                            ExchangeRatesResponse(
+                                amount = 1.0,
+                                base = base,
+                                date = entities.first().date,
+                                rates = entities.associate { it.targetCode to it.rate }
+                            )
                         )
-                    )
-                } else null
-            }
-            .collect { send(it) }
+                    } else null
+                }
+                .collect { send(it) }
+        } catch (e: Throwable) {
+            send(Result.Error(e.toDataError()))
+        }
     }.distinctUntilChanged()
 
     override fun getCurrencies(): Flow<Result<Map<String, String>, DataError.Network>> = channelFlow {
@@ -91,18 +95,22 @@ class RealExchangeRateRepository(
                     currencyDao.insertCurrencies(entities)
                     metadataDao.insertMetadata(MetadataEntity("currencies", currentTimeMillis))
                 }
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 send(Result.Error(e.toDataError()))
             }
         }
 
-        currencyDao.getAllCurrencies()
-            .mapNotNull { entities ->
-                if (entities.isNotEmpty()) {
-                    Result.Success(entities.associate { it.code to it.name })
-                } else null
-            }
-            .collect { send(it) }
+        try {
+            currencyDao.getAllCurrencies()
+                .mapNotNull { entities ->
+                    if (entities.isNotEmpty()) {
+                        Result.Success(entities.associate { it.code to it.name })
+                    } else null
+                }
+                .collect { send(it) }
+        } catch (e: Throwable) {
+            send(Result.Error(e.toDataError()))
+        }
     }.distinctUntilChanged()
 
     override fun getPinnedCurrencies(): Flow<Set<String>> =
