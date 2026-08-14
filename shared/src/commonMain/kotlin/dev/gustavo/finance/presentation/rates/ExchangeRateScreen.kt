@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -122,7 +123,13 @@ class ExchangeRateScreen : Screen {
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
             topBar = {
                 TopAppBar(
-                    title = { Text(stringResource(Res.string.exchange_rates_title)) }
+                    title = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(Res.string.exchange_rates_title))
+                            Spacer(Modifier.width(8.dp))
+                            PlatformIcon()
+                        }
+                    }
                 )
             }
         ) { padding ->
