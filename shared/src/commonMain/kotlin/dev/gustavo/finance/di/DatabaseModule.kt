@@ -14,6 +14,7 @@ val databaseModule = module {
     single { get<AppDatabase>().currencyDao() }
     single { get<AppDatabase>().exchangeRateDao() }
     single { get<AppDatabase>().metadataDao() }
+    single { get<AppDatabase>().pinDao() }
 
     single { Settings() }
     singleOf(::SettingsPreferencesRepository) { bind<PreferencesRepository>() }

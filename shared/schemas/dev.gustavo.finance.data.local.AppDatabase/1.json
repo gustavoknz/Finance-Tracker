@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "d9c302cce1ef2329c3956c17607aff91",
+    "identityHash": "73576f7fb288e5004e9471b19c28c418",
     "entities": [
       {
         "tableName": "CurrencyEntity",
@@ -88,11 +88,29 @@
             "key"
           ]
         }
+      },
+      {
+        "tableName": "PinEntity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`currencyCode` TEXT NOT NULL, PRIMARY KEY(`currencyCode`))",
+        "fields": [
+          {
+            "fieldPath": "currencyCode",
+            "columnName": "currencyCode",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "currencyCode"
+          ]
+        }
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd9c302cce1ef2329c3956c17607aff91')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '73576f7fb288e5004e9471b19c28c418')"
     ]
   }
 }

@@ -4,29 +4,10 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,22 +17,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cafe.adriel.voyager.core.screen.Screen
 import dev.gustavo.finance.domain.util.DataError
-import finance_tracker.shared.generated.resources.Res
-import finance_tracker.shared.generated.resources.base_currency_label
-import finance_tracker.shared.generated.resources.error_client
-import finance_tracker.shared.generated.resources.error_network
-import finance_tracker.shared.generated.resources.error_server
-import finance_tracker.shared.generated.resources.error_service_unavailable
-import finance_tracker.shared.generated.resources.error_unknown
-import finance_tracker.shared.generated.resources.exchange_rates_title
-import finance_tracker.shared.generated.resources.last_updated_label
-import finance_tracker.shared.generated.resources.retry_button
+import finance_tracker.shared.generated.resources.*
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import org.jetbrains.compose.resources.stringResource
@@ -86,11 +59,13 @@ class ExchangeRateScreen : Screen {
                         ) {
                             RateList(
                                 base = currentState.base,
-                                rates = currentState.rates,
+                                pinnedRates = currentState.pinnedRates,
+                                otherRates = currentState.otherRates,
                                 lastUpdated = currentState.lastUpdated,
                                 searchQuery = searchQuery,
                                 onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
-                                onRateClick = { currency -> viewModel.fetchRates(currency) }
+                                onRateClick = { currency -> viewModel.fetchRates(currency) },
+                                onTogglePin = { viewModel.togglePin(it) }
                             )
                         }
                     }
@@ -140,16 +115,17 @@ class ExchangeRateScreen : Screen {
     @Composable
     internal fun RateList(
         base: String,
-        rates: ImmutableList<ExchangeRateUiModel>,
+        pinnedRates: ImmutableList<ExchangeRateUiModel>,
+        otherRates: ImmutableList<ExchangeRateUiModel>,
         lastUpdated: String,
         searchQuery: String,
         onSearchQueryChange: (String) -> Unit,
-        onRateClick: (String) -> Unit
+        onRateClick: (String) -> Unit,
+        onTogglePin: (String) -> Unit
     ) {
         var clickedCurrency by remember { mutableStateOf<String?>(null) }
 
-        // Reset clickedCurrency when data changes (e.g. after successful fetch)
-        LaunchedEffect(rates) {
+        LaunchedEffect(pinnedRates, otherRates) {
             clickedCurrency = null
         }
 
@@ -191,20 +167,57 @@ class ExchangeRateScreen : Screen {
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(rates, key = { it.code }) { uiModel ->
-                    val isClicked = uiModel.code == clickedCurrency
+                if (pinnedRates.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = "Pinned",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    }
+                    items(pinnedRates, key = { "pinned_${it.code}" }) { uiModel ->
+                        val isClicked = uiModel.code == clickedCurrency
+                        AnimatedVisibility(
+                            visible = !isClicked,
+                            exit = fadeOut(tween(500)) + slideOutVertically(tween(500)) { -it }
+                        ) {
+                            RateItem(
+                                uiModel = uiModel,
+                                onClick = {
+                                    clickedCurrency = uiModel.code
+                                    onRateClick(uiModel.code)
+                                },
+                                onTogglePin = { onTogglePin(uiModel.code) }
+                            )
+                        }
+                    }
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "All Currencies",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.secondary,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    }
+                }
 
+                items(otherRates, key = { it.code }) { uiModel ->
+                    val isClicked = uiModel.code == clickedCurrency
                     AnimatedVisibility(
                         visible = !isClicked,
-                        exit = fadeOut(tween(500)) + slideOutVertically(tween(500)) { -it },
-                        modifier = Modifier.animateItem()
+                        exit = fadeOut(tween(500)) + slideOutVertically(tween(500)) { -it }
                     ) {
                         RateItem(
                             uiModel = uiModel,
                             onClick = {
                                 clickedCurrency = uiModel.code
                                 onRateClick(uiModel.code)
-                            }
+                            },
+                            onTogglePin = { onTogglePin(uiModel.code) }
                         )
                     }
                 }
@@ -217,6 +230,7 @@ class ExchangeRateScreen : Screen {
     internal fun RateItem(
         uiModel: ExchangeRateUiModel,
         onClick: () -> Unit,
+        onTogglePin: () -> Unit,
         modifier: Modifier = Modifier
     ) {
         Card(
@@ -228,6 +242,13 @@ class ExchangeRateScreen : Screen {
                 modifier = Modifier.padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                IconButton(onClick = onTogglePin) {
+                    Text(
+                        text = if (uiModel.isPinned) "★" else "☆",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = if (uiModel.isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                    )
+                }
                 Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
@@ -269,9 +290,11 @@ internal fun RateItemPreview() {
                 name = "United States Dollar",
                 symbol = "$",
                 rate = 1.0,
-                formattedRate = "1.00"
+                formattedRate = "1.00",
+                isPinned = true
             ),
-            onClick = {}
+            onClick = {},
+            onTogglePin = {}
         )
     }
 }
@@ -293,14 +316,17 @@ internal fun RateListPreview() {
     MaterialTheme {
         ExchangeRateScreen().RateList(
             base = "EUR",
-            rates = persistentListOf(
-                ExchangeRateUiModel("USD", "Dollar", "$", 1.08, "1.08"),
+            pinnedRates = persistentListOf(
+                ExchangeRateUiModel("USD", "Dollar", "$", 1.08, "1.08", isPinned = true)
+            ),
+            otherRates = persistentListOf(
                 ExchangeRateUiModel("GBP", "Pound", "£", 0.85, "0.85")
             ),
             lastUpdated = "2024-05-20",
             searchQuery = "",
             onSearchQueryChange = {},
-            onRateClick = {}
+            onRateClick = {},
+            onTogglePin = {}
         )
     }
 }

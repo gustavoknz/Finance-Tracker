@@ -3,34 +3,22 @@ package dev.gustavo.finance.presentation.rates
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.gustavo.finance.domain.model.ExchangeRatesResponse
-import dev.gustavo.finance.domain.usecase.GetBaseCurrencyUseCase
-import dev.gustavo.finance.domain.usecase.GetCurrenciesUseCase
-import dev.gustavo.finance.domain.usecase.GetLatestRatesUseCase
-import dev.gustavo.finance.domain.usecase.SetBaseCurrencyUseCase
+import dev.gustavo.finance.domain.usecase.*
 import dev.gustavo.finance.domain.util.DataError
 import dev.gustavo.finance.domain.util.Result
 import dev.gustavo.finance.util.getCurrencySymbol
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.scan
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 sealed interface ExchangeRateState {
     data object Loading : ExchangeRateState
     data class Success(
         val base: String,
-        val rates: ImmutableList<ExchangeRateUiModel>,
+        val pinnedRates: ImmutableList<ExchangeRateUiModel>,
+        val otherRates: ImmutableList<ExchangeRateUiModel>,
         val lastUpdated: String,
         val isRefreshing: Boolean = false
     ) : ExchangeRateState
@@ -42,6 +30,8 @@ class ExchangeRateViewModel(
     private val getCurrenciesUseCase: GetCurrenciesUseCase,
     private val getLatestRatesUseCase: GetLatestRatesUseCase,
     private val setBaseCurrencyUseCase: SetBaseCurrencyUseCase,
+    private val getPinnedCurrenciesUseCase: GetPinnedCurrenciesUseCase,
+    private val togglePinUseCase: TogglePinUseCase,
     getBaseCurrencyUseCase: GetBaseCurrencyUseCase
 ) : ViewModel() {
 
@@ -59,9 +49,10 @@ class ExchangeRateViewModel(
         .flatMapLatest { base ->
             combine(
                 getCurrenciesUseCase(),
-                getLatestRatesUseCase(base)
-            ) { currenciesResult, ratesResult ->
-                mapToState(base, currenciesResult, ratesResult)
+                getLatestRatesUseCase(base),
+                getPinnedCurrenciesUseCase()
+            ) { currenciesResult, ratesResult, pinnedCodes ->
+                mapToState(base, currenciesResult, ratesResult, pinnedCodes)
             }
         }.scan(ExchangeRateState.Loading as ExchangeRateState) { previous, current ->
             if (current is ExchangeRateState.Loading && previous is ExchangeRateState.Success) {
@@ -73,7 +64,11 @@ class ExchangeRateViewModel(
         .combine(_searchQuery) { currentState, query ->
             if (currentState is ExchangeRateState.Success && query.isNotBlank()) {
                 currentState.copy(
-                    rates = currentState.rates.filter {
+                    pinnedRates = currentState.pinnedRates.filter {
+                        it.code.contains(query, ignoreCase = true) ||
+                                it.name.contains(query, ignoreCase = true)
+                    }.toImmutableList(),
+                    otherRates = currentState.otherRates.filter {
                         it.code.contains(query, ignoreCase = true) ||
                                 it.name.contains(query, ignoreCase = true)
                     }.toImmutableList()
@@ -91,13 +86,14 @@ class ExchangeRateViewModel(
     private fun mapToState(
         base: String,
         currenciesResult: Result<Map<String, String>, DataError.Network>,
-        ratesResult: Result<ExchangeRatesResponse, DataError.Network>
+        ratesResult: Result<ExchangeRatesResponse, DataError.Network>,
+        pinnedCodes: Set<String>
     ): ExchangeRateState {
         return when {
             currenciesResult is Result.Error -> ExchangeRateState.Error(currenciesResult.error, base)
             ratesResult is Result.Error -> ExchangeRateState.Error(ratesResult.error, base)
             currenciesResult is Result.Success && ratesResult is Result.Success -> {
-                createSuccessState(currenciesResult.data, ratesResult.data)
+                createSuccessState(currenciesResult.data, ratesResult.data, pinnedCodes)
             }
 
             else -> ExchangeRateState.Loading
@@ -106,21 +102,26 @@ class ExchangeRateViewModel(
 
     private fun createSuccessState(
         currencyNames: Map<String, String>,
-        ratesResponse: ExchangeRatesResponse
+        ratesResponse: ExchangeRatesResponse,
+        pinnedCodes: Set<String>
     ): ExchangeRateState.Success {
-        val uiRates = ratesResponse.rates.map { (code, rate) ->
+        val allUiRates = ratesResponse.rates.map { (code, rate) ->
             ExchangeRateUiModel(
                 code = code,
                 name = currencyNames[code] ?: "",
                 symbol = getCurrencySymbol(code),
                 rate = rate,
-                formattedRate = rate.toString()
+                formattedRate = rate.toString(),
+                isPinned = pinnedCodes.contains(code)
             )
-        }.toImmutableList()
+        }
+
+        val (pinned, others) = allUiRates.partition { it.isPinned }
 
         return ExchangeRateState.Success(
             base = ratesResponse.base,
-            rates = uiRates,
+            pinnedRates = pinned.toImmutableList(),
+            otherRates = others.toImmutableList(),
             lastUpdated = ratesResponse.date
         )
     }
@@ -136,6 +137,12 @@ class ExchangeRateViewModel(
     fun refresh() {
         viewModelScope.launch {
             _refreshTrigger.emit(Unit)
+        }
+    }
+
+    fun togglePin(code: String) {
+        viewModelScope.launch {
+            togglePinUseCase(code)
         }
     }
 }

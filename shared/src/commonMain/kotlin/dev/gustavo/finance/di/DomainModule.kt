@@ -15,4 +15,6 @@ val domainModule = module {
     factoryOf(::GetLatestRatesUseCase)
     factoryOf(::GetBaseCurrencyUseCase)
     factoryOf(::SetBaseCurrencyUseCase)
+    factoryOf(::GetPinnedCurrenciesUseCase)
+    factoryOf(::TogglePinUseCase)
 }

@@ -4,6 +4,7 @@ import dev.gustavo.finance.data.fake.FakeCurrencyDao
 import dev.gustavo.finance.data.fake.FakeCurrencyService
 import dev.gustavo.finance.data.fake.FakeExchangeRateDao
 import dev.gustavo.finance.data.fake.FakeMetadataDao
+import dev.gustavo.finance.data.fake.FakePinDao
 import dev.gustavo.finance.data.local.ExchangeRateEntity
 import dev.gustavo.finance.domain.model.ExchangeRatesResponse
 import dev.gustavo.finance.domain.util.Result
@@ -21,6 +22,7 @@ class RealExchangeRateRepositoryTest {
     private lateinit var currencyDao: FakeCurrencyDao
     private lateinit var exchangeRateDao: FakeExchangeRateDao
     private lateinit var metadataDao: FakeMetadataDao
+    private lateinit var pinDao: FakePinDao
     private lateinit var repository: RealExchangeRateRepository
 
     @BeforeTest
@@ -29,7 +31,8 @@ class RealExchangeRateRepositoryTest {
         currencyDao = FakeCurrencyDao()
         exchangeRateDao = FakeExchangeRateDao()
         metadataDao = FakeMetadataDao()
-        repository = RealExchangeRateRepository(service, currencyDao, exchangeRateDao, metadataDao)
+        pinDao = FakePinDao()
+        repository = RealExchangeRateRepository(service, currencyDao, exchangeRateDao, metadataDao, pinDao)
     }
 
     @Test

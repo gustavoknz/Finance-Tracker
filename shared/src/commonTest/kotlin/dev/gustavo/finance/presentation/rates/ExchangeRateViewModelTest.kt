@@ -3,10 +3,7 @@ package dev.gustavo.finance.presentation.rates
 import dev.gustavo.finance.domain.model.ExchangeRatesResponse
 import dev.gustavo.finance.domain.repository.FakeExchangeRateRepository
 import dev.gustavo.finance.domain.repository.FakePreferencesRepository
-import dev.gustavo.finance.domain.usecase.GetBaseCurrencyUseCase
-import dev.gustavo.finance.domain.usecase.GetCurrenciesUseCase
-import dev.gustavo.finance.domain.usecase.GetLatestRatesUseCase
-import dev.gustavo.finance.domain.usecase.SetBaseCurrencyUseCase
+import dev.gustavo.finance.domain.usecase.*
 import dev.gustavo.finance.domain.util.DataError
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -43,6 +40,8 @@ class ExchangeRateViewModelTest {
             getCurrenciesUseCase = GetCurrenciesUseCase(repository),
             getLatestRatesUseCase = GetLatestRatesUseCase(repository),
             setBaseCurrencyUseCase = SetBaseCurrencyUseCase(preferencesRepository),
+            getPinnedCurrenciesUseCase = GetPinnedCurrenciesUseCase(repository),
+            togglePinUseCase = TogglePinUseCase(repository),
             getBaseCurrencyUseCase = GetBaseCurrencyUseCase(preferencesRepository)
         )
     }
@@ -75,9 +74,9 @@ class ExchangeRateViewModelTest {
         
         assertTrue(state is ExchangeRateState.Success, "Expected Success state but was $state")
         assertEquals("EUR", state.base)
-        assertEquals(1, state.rates.size)
-        assertEquals("USD", state.rates[0].code)
-        assertEquals("Dollar", state.rates[0].name)
+        assertEquals(1, state.otherRates.size)
+        assertEquals("USD", state.otherRates[0].code)
+        assertEquals("Dollar", state.otherRates[0].name)
         assertFalse(state.isRefreshing)
     }
 
@@ -150,17 +149,13 @@ class ExchangeRateViewModelTest {
         assertFalse(initialState.isRefreshing)
 
         // 2. Trigger loading for DIFFERENT base to see transition
-        // Since we use UnconfinedTestDispatcher, emissions happen immediately.
-        // To test isRefreshing=true, we'd need the repository to emit Loading then delay before Success.
-        // Our current scan logic: if current is Loading and previous is Success -> previous.copy(isRefreshing = true)
-        
         repository.emitLoadingOnly = true
         viewModel.fetchRates("EUR")
         
         val refreshingState = viewModel.state.value
         assertTrue(refreshingState is ExchangeRateState.Success, "Expected Success (refreshing) but was $refreshingState")
         assertTrue(refreshingState.isRefreshing)
-        assertEquals("USD", refreshingState.base) // Should still show old base while refreshing new one
+        assertEquals("USD", refreshingState.base) 
     }
 
     @Test
@@ -172,23 +167,44 @@ class ExchangeRateViewModelTest {
         viewModel.fetchRates("EUR")
         
         val initialState = viewModel.state.value as ExchangeRateState.Success
-        assertEquals(2, initialState.rates.size)
+        assertEquals(2, initialState.otherRates.size)
 
         // Filter by code
         viewModel.onSearchQueryChange("US")
         val filteredByCode = viewModel.state.value as ExchangeRateState.Success
-        assertEquals(1, filteredByCode.rates.size)
-        assertEquals("USD", filteredByCode.rates[0].code)
+        assertEquals(1, filteredByCode.otherRates.size)
+        assertEquals("USD", filteredByCode.otherRates[0].code)
 
         // Filter by name
         viewModel.onSearchQueryChange("Real")
         val filteredByName = viewModel.state.value as ExchangeRateState.Success
-        assertEquals(1, filteredByName.rates.size)
-        assertEquals("BRL", filteredByName.rates[0].code)
+        assertEquals(1, filteredByName.otherRates.size)
+        assertEquals("BRL", filteredByName.otherRates[0].code)
 
         // Clear filter
         viewModel.onSearchQueryChange("")
         val clearedFilter = viewModel.state.value as ExchangeRateState.Success
-        assertEquals(2, clearedFilter.rates.size)
+        assertEquals(2, clearedFilter.otherRates.size)
+    }
+
+    @Test
+    fun `togglePin should update pinned state`() = runTest {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.state.collect {} }
+
+        repository.currenciesResult = mapOf("USD" to "Dollar", "EUR" to "Euro")
+        repository.latestRatesResult = ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08))
+        viewModel.fetchRates("EUR")
+
+        val initialState = viewModel.state.value as ExchangeRateState.Success
+        assertEquals(1, initialState.otherRates.size)
+        assertEquals(0, initialState.pinnedRates.size)
+
+        viewModel.togglePin("USD")
+
+        val pinnedState = viewModel.state.value as ExchangeRateState.Success
+        assertEquals(0, pinnedState.otherRates.size)
+        assertEquals(1, pinnedState.pinnedRates.size)
+        assertEquals("USD", pinnedState.pinnedRates[0].code)
+        assertTrue(pinnedState.pinnedRates[0].isPinned)
     }
 }

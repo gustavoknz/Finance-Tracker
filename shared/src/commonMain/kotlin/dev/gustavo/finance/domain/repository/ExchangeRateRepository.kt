@@ -8,4 +8,6 @@ import kotlinx.coroutines.flow.Flow
 interface ExchangeRateRepository {
     fun getLatestRates(base: String): Flow<Result<ExchangeRatesResponse, DataError.Network>>
     fun getCurrencies(): Flow<Result<Map<String, String>, DataError.Network>>
+    fun getPinnedCurrencies(): Flow<Set<String>>
+    suspend fun togglePin(code: String)
 }

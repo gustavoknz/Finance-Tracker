@@ -6,6 +6,8 @@ import dev.gustavo.finance.data.local.ExchangeRateDao
 import dev.gustavo.finance.data.local.ExchangeRateEntity
 import dev.gustavo.finance.data.local.MetadataDao
 import dev.gustavo.finance.data.local.MetadataEntity
+import dev.gustavo.finance.data.local.PinDao
+import dev.gustavo.finance.data.local.PinEntity
 import dev.gustavo.finance.data.mapper.toDataError
 import dev.gustavo.finance.data.remote.CurrencyService
 import dev.gustavo.finance.domain.model.ExchangeRatesResponse
@@ -20,7 +22,8 @@ class RealExchangeRateRepository(
     private val currencyService: CurrencyService,
     private val currencyDao: CurrencyDao,
     private val exchangeRateDao: ExchangeRateDao,
-    private val metadataDao: MetadataDao
+    private val metadataDao: MetadataDao,
+    private val pinDao: PinDao
 ) : ExchangeRateRepository {
 
     companion object {
@@ -101,4 +104,15 @@ class RealExchangeRateRepository(
             }
             .collect { send(it) }
     }.distinctUntilChanged()
+
+    override fun getPinnedCurrencies(): Flow<Set<String>> =
+        pinDao.getAllPinnedCodes().map { it.toSet() }
+
+    override suspend fun togglePin(code: String) {
+        if (pinDao.isPinned(code)) {
+            pinDao.deletePin(PinEntity(code))
+        } else {
+            pinDao.insertPin(PinEntity(code))
+        }
+    }
 }
