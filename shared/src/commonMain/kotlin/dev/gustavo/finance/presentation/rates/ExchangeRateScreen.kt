@@ -17,6 +17,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -146,15 +148,19 @@ class ExchangeRateScreen : Screen {
                 )
             }
 
+            val clearSearchDesc = stringResource(Res.string.clear_search_description)
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = onSearchQueryChange,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                placeholder = { Text("Search currencies...") },
-                leadingIcon = { Text("🔍") },
+                placeholder = { Text(stringResource(Res.string.search_placeholder)) },
+                leadingIcon = { Text("🔍", modifier = Modifier.semantics { contentDescription = "Search" }) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { onSearchQueryChange("") }) {
+                        IconButton(
+                            onClick = { onSearchQueryChange("") },
+                            modifier = Modifier.semantics { contentDescription = clearSearchDesc }
+                        ) {
                             Text("✕")
                         }
                     }
@@ -170,7 +176,7 @@ class ExchangeRateScreen : Screen {
                 if (pinnedRates.isNotEmpty()) {
                     item {
                         Text(
-                            text = "Pinned",
+                            text = stringResource(Res.string.pinned_header),
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold,
@@ -196,7 +202,7 @@ class ExchangeRateScreen : Screen {
                     item {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "All Currencies",
+                            text = stringResource(Res.string.all_currencies_header),
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.secondary,
                             fontWeight = FontWeight.Bold,
@@ -233,16 +239,35 @@ class ExchangeRateScreen : Screen {
         onTogglePin: () -> Unit,
         modifier: Modifier = Modifier
     ) {
+        val description = stringResource(
+            Res.string.currency_card_content_description,
+            uiModel.name.ifBlank { uiModel.code },
+            uiModel.formattedRate
+        )
+        val pinDescription = stringResource(
+            if (uiModel.isPinned) Res.string.unpin_content_description else Res.string.pin_content_description,
+            uiModel.code
+        )
+
         Card(
             onClick = onClick,
-            modifier = modifier.fillMaxWidth(),
+            modifier = modifier
+                .fillMaxWidth()
+                .semantics(mergeDescendants = true) {
+                    contentDescription = description
+                },
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Row(
                 modifier = Modifier.padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onTogglePin) {
+                IconButton(
+                    onClick = onTogglePin,
+                    modifier = Modifier.semantics {
+                        contentDescription = pinDescription
+                    }
+                ) {
                     Text(
                         text = if (uiModel.isPinned) "★" else "☆",
                         style = MaterialTheme.typography.headlineSmall,

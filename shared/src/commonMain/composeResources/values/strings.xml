@@ -9,4 +9,11 @@
     <string name="error_server">Something went wrong on our end. Please try again later.</string>
     <string name="error_unknown">An unexpected error occurred.</string>
     <string name="retry_button">Retry</string>
+    <string name="pin_content_description">Pin %1$s to top</string>
+    <string name="unpin_content_description">Unpin %1$s from top</string>
+    <string name="currency_card_content_description">Exchange rate for %1$s is %2$s</string>
+    <string name="pinned_header">Pinned currencies</string>
+    <string name="all_currencies_header">All currencies</string>
+    <string name="search_placeholder">Search currencies…</string>
+    <string name="clear_search_description">Clear search query</string>
 </resources>

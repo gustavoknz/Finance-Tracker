@@ -6,6 +6,7 @@ import dev.gustavo.finance.domain.model.ExchangeRatesResponse
 import dev.gustavo.finance.domain.usecase.*
 import dev.gustavo.finance.domain.util.DataError
 import dev.gustavo.finance.domain.util.Result
+import dev.gustavo.finance.util.format
 import dev.gustavo.finance.util.getCurrencySymbol
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -106,12 +107,13 @@ class ExchangeRateViewModel(
         pinnedCodes: Set<String>
     ): ExchangeRateState.Success {
         val allUiRates = ratesResponse.rates.map { (code, rate) ->
+            val decimals = if (rate < 0.1) 4 else 2
             ExchangeRateUiModel(
                 code = code,
                 name = currencyNames[code] ?: "",
                 symbol = getCurrencySymbol(code),
                 rate = rate,
-                formattedRate = rate.toString(),
+                formattedRate = rate.format(decimals),
                 isPinned = pinnedCodes.contains(code)
             )
         }

@@ -36,3 +36,5 @@ fun getCurrencySymbol(code: String): String {
         else -> code
     }
 }
+
+expect fun Double.format(decimals: Int): String
