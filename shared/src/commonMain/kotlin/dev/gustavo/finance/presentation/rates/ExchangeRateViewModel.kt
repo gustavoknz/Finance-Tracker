@@ -1,5 +1,6 @@
 package dev.gustavo.finance.presentation.rates
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.gustavo.finance.domain.model.ExchangeRatesResponse
@@ -30,6 +31,7 @@ import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+@Immutable
 sealed interface ExchangeRateState {
     data object Loading : ExchangeRateState
     data class Success(
@@ -80,6 +82,7 @@ class ExchangeRateViewModel(
                 current is ExchangeRateState.Loading && previous is ExchangeRateState.Success -> {
                     previous.copy(isRefreshing = true, syncError = null)
                 }
+
                 current is ExchangeRateState.Error && previous is ExchangeRateState.Success -> {
                     // Non-blocking error: keep showing data but notify user
                     viewModelScope.launch {
@@ -87,6 +90,7 @@ class ExchangeRateViewModel(
                     }
                     previous.copy(isRefreshing = false, syncError = current.error)
                 }
+
                 else -> current
             }
         }

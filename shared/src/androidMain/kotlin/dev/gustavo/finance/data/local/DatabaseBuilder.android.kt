@@ -8,6 +8,6 @@ fun getAndroidDatabaseBuilder(context: Context): RoomDatabase.Builder<AppDatabas
     val dbFile = context.getDatabasePath("finance_tracker.db")
     return Room.databaseBuilder<AppDatabase>(
         context = context,
-        name = dbFile.absolutePath
+        name = dbFile?.absolutePath ?: "finance_tracker.db"
     )
 }

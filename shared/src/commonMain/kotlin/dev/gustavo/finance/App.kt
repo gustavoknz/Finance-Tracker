@@ -3,32 +3,40 @@ package dev.gustavo.finance
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import dev.gustavo.finance.di.databaseModule
-import dev.gustavo.finance.di.domainModule
-import dev.gustavo.finance.di.networkModule
-import dev.gustavo.finance.di.viewModelModule
 import dev.gustavo.finance.presentation.rates.ExchangeRateScreen
-import org.koin.compose.KoinApplication
-import org.koin.dsl.koinConfiguration
+import dev.gustavo.finance.presentation.rates.ExchangeRateState
+import dev.gustavo.finance.presentation.rates.ExchangeRateUiModel
+import kotlinx.collections.immutable.persistentListOf
 
 @Composable
-fun App() {
+fun App(
+    content: @Composable () -> Unit = { ExchangeRateScreen().Content() }
+) {
     MaterialTheme {
-        ExchangeRateScreen().Content()
+        content()
     }
 }
 
 @Composable
 @Preview
 fun AppPreview() {
-    KoinApplication(configuration = koinConfiguration {
-        modules(
-            networkModule,
-            databaseModule,
-            domainModule,
-            viewModelModule
+    App {
+        ExchangeRateScreen().ExchangeRateScreenContent(
+            state = ExchangeRateState.Success(
+                base = "EUR",
+                pinnedRates = persistentListOf(
+                    ExchangeRateUiModel("USD", "Dollar", "$", 1.08, "1.08", isPinned = true)
+                ),
+                otherRates = persistentListOf(
+                    ExchangeRateUiModel("GBP", "Pound", "£", 0.85, "0.85")
+                ),
+                lastUpdated = "2024-05-20"
+            ),
+            searchQuery = "",
+            onSearchQueryChange = {},
+            onRefresh = {},
+            onRateClick = {},
+            onTogglePin = {}
         )
-    }) {
-        App()
     }
 }

@@ -96,6 +96,28 @@ class ExchangeRateScreen : Screen {
             }
         }
 
+        ExchangeRateScreenContent(
+            state = state,
+            searchQuery = searchQuery,
+            onSearchQueryChange = viewModel::onSearchQueryChange,
+            onRefresh = viewModel::refresh,
+            onRateClick = viewModel::fetchRates,
+            onTogglePin = viewModel::togglePin,
+            snackbarHostState = snackbarHostState
+        )
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun ExchangeRateScreenContent(
+        state: ExchangeRateState,
+        searchQuery: String,
+        onSearchQueryChange: (String) -> Unit,
+        onRefresh: () -> Unit,
+        onRateClick: (String) -> Unit,
+        onTogglePin: (String) -> Unit,
+        snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
+    ) {
         Scaffold(
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
             topBar = {
@@ -105,33 +127,33 @@ class ExchangeRateScreen : Screen {
             }
         ) { padding ->
             Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-                when (val currentState = state) {
+                when (state) {
                     is ExchangeRateState.Loading -> {
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                     }
 
                     is ExchangeRateState.Success -> {
                         PullToRefreshBox(
-                            isRefreshing = currentState.isRefreshing,
-                            onRefresh = { viewModel.refresh() }
+                            isRefreshing = state.isRefreshing,
+                            onRefresh = onRefresh
                         ) {
                             RateList(
-                                base = currentState.base,
-                                pinnedRates = currentState.pinnedRates,
-                                otherRates = currentState.otherRates,
-                                lastUpdated = currentState.lastUpdated,
+                                base = state.base,
+                                pinnedRates = state.pinnedRates,
+                                otherRates = state.otherRates,
+                                lastUpdated = state.lastUpdated,
                                 searchQuery = searchQuery,
-                                onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
-                                onRateClick = { currency -> viewModel.fetchRates(currency) },
-                                onTogglePin = { viewModel.togglePin(it) }
+                                onSearchQueryChange = onSearchQueryChange,
+                                onRateClick = onRateClick,
+                                onTogglePin = onTogglePin
                             )
                         }
                     }
 
                     is ExchangeRateState.Error -> {
                         ErrorView(
-                            error = currentState.error,
-                            onRetry = { viewModel.fetchRates(currentState.base) }
+                            error = state.error,
+                            onRetry = { onRateClick(state.base) }
                         )
                     }
                 }
@@ -393,19 +415,22 @@ internal fun ErrorViewPreview() {
 
 @Preview
 @Composable
-internal fun RateListPreview() {
+internal fun ExchangeRateScreenPreview() {
     MaterialTheme {
-        ExchangeRateScreen().RateList(
-            base = "EUR",
-            pinnedRates = persistentListOf(
-                ExchangeRateUiModel("USD", "Dollar", "$", 1.08, "1.08", isPinned = true)
+        ExchangeRateScreen().ExchangeRateScreenContent(
+            state = ExchangeRateState.Success(
+                base = "EUR",
+                pinnedRates = persistentListOf(
+                    ExchangeRateUiModel("USD", "Dollar", "$", 1.08, "1.08", isPinned = true)
+                ),
+                otherRates = persistentListOf(
+                    ExchangeRateUiModel("GBP", "Pound", "£", 0.85, "0.85")
+                ),
+                lastUpdated = "2024-05-20"
             ),
-            otherRates = persistentListOf(
-                ExchangeRateUiModel("GBP", "Pound", "£", 0.85, "0.85")
-            ),
-            lastUpdated = "2024-05-20",
             searchQuery = "",
             onSearchQueryChange = {},
+            onRefresh = {},
             onRateClick = {},
             onTogglePin = {}
         )

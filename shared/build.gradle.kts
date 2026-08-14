@@ -76,7 +76,7 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.datetime)
-            implementation(libs.kotlinx.collections.immutable)
+            api(libs.kotlinx.collections.immutable)
 
             // DI
             implementation(libs.koin.core)
@@ -84,7 +84,7 @@ kotlin {
             implementation(libs.koin.compose.viewmodel)
 
             // Navigation
-            implementation(libs.voyager.navigator)
+            api(libs.voyager.navigator)
             implementation(libs.voyager.transitions)
 
             // Room

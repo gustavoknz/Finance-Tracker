@@ -15,7 +15,7 @@ import org.koin.dsl.module
 
 val domainModule = module {
     singleOf(::RealExchangeRateRepository) { bind<ExchangeRateRepository>() }
-    
+
     factoryOf(::GetCurrenciesUseCase)
     factoryOf(::GetLatestRatesUseCase)
     factoryOf(::GetBaseCurrencyUseCase)

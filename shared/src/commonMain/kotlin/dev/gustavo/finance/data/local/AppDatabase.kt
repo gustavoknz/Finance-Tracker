@@ -5,7 +5,10 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
 
-@Database(entities = [CurrencyEntity::class, ExchangeRateEntity::class, MetadataEntity::class, PinEntity::class], version = 1)
+@Database(
+    entities = [CurrencyEntity::class, ExchangeRateEntity::class, MetadataEntity::class, PinEntity::class],
+    version = 1
+)
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun currencyDao(): CurrencyDao

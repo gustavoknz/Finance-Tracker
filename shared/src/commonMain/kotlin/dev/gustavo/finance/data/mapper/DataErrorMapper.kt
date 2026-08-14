@@ -16,6 +16,7 @@ fun Throwable.toDataError(): DataError.Network {
                 else -> DataError.Network.UNKNOWN
             }
         }
+
         else -> DataError.Network.UNKNOWN
     }
 }
