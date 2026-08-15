@@ -47,6 +47,7 @@ class ExchangeRateViewModelTest {
             setBaseCurrencyUseCase = SetBaseCurrencyUseCase(preferencesRepository),
             getPinnedCurrenciesUseCase = GetPinnedCurrenciesUseCase(repository),
             togglePinUseCase = TogglePinUseCase(repository),
+            displayMapper = ExchangeRateDisplayMapper(),
             getBaseCurrencyUseCase = GetBaseCurrencyUseCase(preferencesRepository)
         )
     }

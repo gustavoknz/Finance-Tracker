@@ -5,6 +5,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.defaultRequest
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -27,8 +28,8 @@ class KtorCurrencyServiceTest {
     fun `getLatestRates should return parsed response`() = runTest {
         val expectedResponse = ExchangeRatesResponse(1.0, "USD", "2024-05-20", mapOf("EUR" to 0.92))
         val responseJson = json.encodeToString(expectedResponse)
-        
-        mockEngine = MockEngine { request ->
+
+        mockEngine = MockEngine { _ ->
             respond(
                 content = responseJson,
                 status = HttpStatusCode.OK,
@@ -37,6 +38,7 @@ class KtorCurrencyServiceTest {
         }
         httpClient = HttpClient(mockEngine) {
             install(ContentNegotiation) { json(json) }
+            defaultRequest { url("https://api.frankfurter.dev/v1/") }
         }
         service = KtorCurrencyService(httpClient)
 
@@ -50,8 +52,8 @@ class KtorCurrencyServiceTest {
     fun `getCurrencies should return parsed map`() = runTest {
         val expectedCurrencies = mapOf("USD" to "United States Dollar", "EUR" to "Euro")
         val responseJson = json.encodeToString(expectedCurrencies)
-        
-        mockEngine = MockEngine { request ->
+
+        mockEngine = MockEngine { _ ->
             respond(
                 content = responseJson,
                 status = HttpStatusCode.OK,
@@ -60,6 +62,7 @@ class KtorCurrencyServiceTest {
         }
         httpClient = HttpClient(mockEngine) {
             install(ContentNegotiation) { json(json) }
+            defaultRequest { url("https://api.frankfurter.dev/v1/") }
         }
         service = KtorCurrencyService(httpClient)
 
