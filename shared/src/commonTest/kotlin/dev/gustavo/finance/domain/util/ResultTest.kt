@@ -22,8 +22,8 @@ class ResultTest {
         val error: Result<Int, DataError.Network> = Result.Error(DataError.Network.UNKNOWN)
         assertEquals(error, error.map { it * 2 })
 
-        val loading: Result<Int, DataError.Network> = Result.Loading
-        assertEquals(Result.Loading, loading.map { it * 2 })
+        val loading: Result<Int, DataError.Network> = Result.Loading()
+        assertEquals(Result.Loading<Int>(), loading.map { it * 2 })
     }
 
     @Test
@@ -58,10 +58,20 @@ class ResultTest {
     }
 
     @Test
-    fun `getOrNull should return data only for Success`() {
+    fun `getOrNull should return data for Success and Loading with data`() {
         assertEquals(1, Result.Success(1).getOrNull())
         assertNull(Result.Error(DataError.Network.UNKNOWN).getOrNull())
-        assertNull(Result.Loading.getOrNull())
+        assertNull(Result.Loading<Int>().getOrNull())
+        assertEquals(1, Result.Loading(1).getOrNull())
+    }
+
+    @Test
+    fun `map should transform loading data`() {
+        val result: Result<Int, DataError.Network> = Result.Loading(10)
+        val mapped = result.map { it * 2 }
+        
+        assertTrue(mapped is Result.Loading)
+        assertEquals(20, (mapped as Result.Loading).data)
     }
 
     @Test

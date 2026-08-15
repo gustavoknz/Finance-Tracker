@@ -12,6 +12,7 @@ import dev.gustavo.finance.domain.usecase.SetBaseCurrencyUseCase
 import dev.gustavo.finance.domain.usecase.TogglePinUseCase
 import dev.gustavo.finance.domain.util.DataError
 import dev.gustavo.finance.domain.util.Result
+import dev.gustavo.finance.domain.util.getOrNull
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -126,13 +127,20 @@ class ExchangeRateViewModel(
         ratesResult: Result<ExchangeRatesResponse, DataError.Network>,
         pinnedCodes: Set<String>
     ): ExchangeRateState {
+        val currencies = currenciesResult.getOrNull()
+        val rates = ratesResult.getOrNull()
+
         return when {
+            currencies != null && rates != null -> {
+                val successState = displayMapper.mapToSuccessState(currencies, rates, pinnedCodes)
+                if (currenciesResult is Result.Loading || ratesResult is Result.Loading) {
+                    successState.copy(isRefreshing = true)
+                } else {
+                    successState
+                }
+            }
             currenciesResult is Result.Error -> ExchangeRateState.Error(currenciesResult.error, base)
             ratesResult is Result.Error -> ExchangeRateState.Error(ratesResult.error, base)
-            currenciesResult is Result.Success && ratesResult is Result.Success -> {
-                displayMapper.mapToSuccessState(currenciesResult.data, ratesResult.data, pinnedCodes)
-            }
-
             else -> ExchangeRateState.Loading
         }
     }

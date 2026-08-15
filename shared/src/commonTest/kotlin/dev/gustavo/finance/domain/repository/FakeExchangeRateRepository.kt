@@ -17,7 +17,7 @@ class FakeExchangeRateRepository : ExchangeRateRepository {
     private val _pinnedCurrencies = MutableStateFlow<Set<String>>(emptySet())
 
     override fun getLatestRates(base: String): Flow<Result<ExchangeRatesResponse, DataError.Network>> = flow {
-        emit(Result.Loading)
+        emit(Result.Loading())
         if (emitLoadingOnly) return@flow
         
         if (shouldThrow) {
@@ -28,7 +28,7 @@ class FakeExchangeRateRepository : ExchangeRateRepository {
     }
 
     override fun getCurrencies(): Flow<Result<Map<String, String>, DataError.Network>> = flow {
-        emit(Result.Loading)
+        emit(Result.Loading())
         if (emitLoadingOnly) return@flow
         
         if (shouldThrow) {

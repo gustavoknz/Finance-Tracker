@@ -40,7 +40,17 @@ class RealExchangeRateRepository(
     }
 
     override fun getLatestRates(base: String): Flow<Result<ExchangeRatesResponse, DataError.Network>> = channelFlow {
-        send(Result.Loading)
+        val cachedEntities = exchangeRateDao.getRatesByBaseOnce(base)
+        val cachedResponse = if (cachedEntities.isNotEmpty()) {
+            ExchangeRatesResponse(
+                amount = 1.0,
+                base = base,
+                date = cachedEntities.first().date,
+                rates = cachedEntities.associate { it.targetCode to it.rate }
+            )
+        } else null
+
+        send(Result.Loading(cachedResponse))
 
         launch(dispatchers.io) {
             try {
@@ -91,7 +101,12 @@ class RealExchangeRateRepository(
     }.flowOn(dispatchers.io).distinctUntilChanged()
 
     override fun getCurrencies(): Flow<Result<Map<String, String>, DataError.Network>> = channelFlow {
-        send(Result.Loading)
+        val cachedEntities = currencyDao.getAllCurrenciesOnce()
+        val cachedMap = if (cachedEntities.isNotEmpty()) {
+            cachedEntities.associate { it.code to it.name }
+        } else null
+
+        send(Result.Loading(cachedMap))
 
         launch(dispatchers.io) {
             try {
