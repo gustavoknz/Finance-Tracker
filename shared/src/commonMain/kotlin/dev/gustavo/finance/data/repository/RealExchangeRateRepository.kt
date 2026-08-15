@@ -69,7 +69,8 @@ class RealExchangeRateRepository(
                             baseCode = base,
                             targetCode = targetCode,
                             rate = rate,
-                            date = remoteResponse.date
+                            date = remoteResponse.date,
+                            localTimestamp = currentTimeMillis
                         )
                     }
                     exchangeRateDao.insertRates(entities)
@@ -121,7 +122,7 @@ class RealExchangeRateRepository(
                 if (isStale) {
                     val remoteCurrencies = currencyService.getCurrencies()
                     val entities = remoteCurrencies.map { (code, name) ->
-                        CurrencyEntity(code = code, name = name)
+                        CurrencyEntity(code = code, name = name, localTimestamp = currentTimeMillis)
                     }
                     currencyDao.insertCurrencies(entities)
                     metadataDao.insertMetadata(MetadataEntity("currencies", currentTimeMillis))
@@ -150,10 +151,11 @@ class RealExchangeRateRepository(
             .flowOn(dispatchers.io)
 
     override suspend fun togglePin(code: String) = withContext(dispatchers.io) {
+        val now = Clock.System.now().toEpochMilliseconds()
         if (pinDao.isPinned(code)) {
-            pinDao.deletePin(PinEntity(code))
+            pinDao.deletePin(PinEntity(code, localTimestamp = now))
         } else {
-            pinDao.insertPin(PinEntity(code))
+            pinDao.insertPin(PinEntity(code, localTimestamp = now))
         }
     }
 }

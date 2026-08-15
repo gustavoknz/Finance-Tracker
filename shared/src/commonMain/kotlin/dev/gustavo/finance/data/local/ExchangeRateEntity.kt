@@ -7,5 +7,6 @@ data class ExchangeRateEntity(
     val baseCode: String,
     val targetCode: String,
     val rate: Double,
-    val date: String
+    val date: String,
+    val localTimestamp: Long = 0L
 )

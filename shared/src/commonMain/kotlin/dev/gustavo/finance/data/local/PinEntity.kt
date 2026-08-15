@@ -5,5 +5,6 @@ import androidx.room.PrimaryKey
 
 @Entity
 data class PinEntity(
-    @PrimaryKey val currencyCode: String
+    @PrimaryKey val currencyCode: String,
+    val localTimestamp: Long = 0L
 )
