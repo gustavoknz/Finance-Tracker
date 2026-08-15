@@ -36,6 +36,7 @@ class RealExchangeRateRepository(
 
     companion object {
         private const val CURRENCIES_TTL = 24 * 60 * 60 * 1000L // 24 hours
+        private const val RATES_TTL = 30 * 60 * 1000L // 30 minutes
     }
 
     override fun getLatestRates(base: String): Flow<Result<ExchangeRatesResponse, DataError.Network>> = channelFlow {
@@ -43,16 +44,27 @@ class RealExchangeRateRepository(
 
         launch(dispatchers.io) {
             try {
-                val remoteResponse = currencyService.getLatestRates(base)
-                val entities = remoteResponse.rates.map { (targetCode, rate) ->
-                    ExchangeRateEntity(
-                        baseCode = base,
-                        targetCode = targetCode,
-                        rate = rate,
-                        date = remoteResponse.date
-                    )
+                val lastUpdatedMillis = metadataDao.getLastUpdatedTimestamp("rates_$base")
+                val currentTimeMillis = Clock.System.now().toEpochMilliseconds()
+                val isStale = if (lastUpdatedMillis == null) {
+                    true
+                } else {
+                    (currentTimeMillis - lastUpdatedMillis) > RATES_TTL
                 }
-                exchangeRateDao.insertRates(entities)
+
+                if (isStale) {
+                    val remoteResponse = currencyService.getLatestRates(base)
+                    val entities = remoteResponse.rates.map { (targetCode, rate) ->
+                        ExchangeRateEntity(
+                            baseCode = base,
+                            targetCode = targetCode,
+                            rate = rate,
+                            date = remoteResponse.date
+                        )
+                    }
+                    exchangeRateDao.insertRates(entities)
+                    metadataDao.insertMetadata(MetadataEntity("rates_$base", currentTimeMillis))
+                }
             } catch (e: Throwable) {
                 send(Result.Error(e.toDataError()))
             }
