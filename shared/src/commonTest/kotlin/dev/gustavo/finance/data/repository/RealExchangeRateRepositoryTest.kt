@@ -8,8 +8,10 @@ import dev.gustavo.finance.data.fake.FakePinDao
 import dev.gustavo.finance.data.local.ExchangeRateEntity
 import dev.gustavo.finance.domain.model.ExchangeRatesResponse
 import dev.gustavo.finance.domain.util.Result
+import dev.gustavo.finance.util.CoroutineDispatchers
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -24,6 +26,12 @@ class RealExchangeRateRepositoryTest {
     private lateinit var metadataDao: FakeMetadataDao
     private lateinit var pinDao: FakePinDao
     private lateinit var repository: RealExchangeRateRepository
+    private val testDispatcher = UnconfinedTestDispatcher()
+    private val dispatchers = CoroutineDispatchers(
+        main = testDispatcher,
+        default = testDispatcher,
+        io = testDispatcher
+    )
 
     @BeforeTest
     fun setUp() {
@@ -32,7 +40,7 @@ class RealExchangeRateRepositoryTest {
         exchangeRateDao = FakeExchangeRateDao()
         metadataDao = FakeMetadataDao()
         pinDao = FakePinDao()
-        repository = RealExchangeRateRepository(service, currencyDao, exchangeRateDao, metadataDao, pinDao)
+        repository = RealExchangeRateRepository(service, currencyDao, exchangeRateDao, metadataDao, pinDao, dispatchers)
     }
 
     @Test
