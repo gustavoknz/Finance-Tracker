@@ -22,6 +22,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@Suppress("MagicNumber")
 @Preview
 @Composable
 fun AppAndroidPreview() {

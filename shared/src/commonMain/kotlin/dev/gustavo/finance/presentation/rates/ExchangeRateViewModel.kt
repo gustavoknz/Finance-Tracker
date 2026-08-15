@@ -45,6 +45,7 @@ sealed interface ExchangeRateState {
     data class Error(val error: DataError.Network, val base: String) : ExchangeRateState
 }
 
+@Suppress("LongParameterList")
 class ExchangeRateViewModel(
     private val getCurrenciesUseCase: GetCurrenciesUseCase,
     private val getLatestRatesUseCase: GetLatestRatesUseCase,
@@ -78,12 +79,12 @@ class ExchangeRateViewModel(
                 mapToState(base, currenciesResult, ratesResult, pinnedCodes)
             }
         }.scan(ExchangeRateState.Loading as ExchangeRateState) { previous, current ->
-            when {
-                current is ExchangeRateState.Loading && previous is ExchangeRateState.Success -> {
+            when (current) {
+                is ExchangeRateState.Loading if previous is ExchangeRateState.Success -> {
                     previous.copy(isRefreshing = true, syncError = null)
                 }
 
-                current is ExchangeRateState.Error && previous is ExchangeRateState.Success -> {
+                is ExchangeRateState.Error if previous is ExchangeRateState.Success -> {
                     // Non-blocking error: keep showing data but notify user
                     viewModelScope.launch {
                         _uiEvents.emit(ExchangeRateUiEvent.ShowOfflineNotification)

@@ -6,13 +6,20 @@ import dev.gustavo.finance.util.getCurrencySymbol
 import kotlinx.collections.immutable.toImmutableList
 
 class ExchangeRateDisplayMapper {
+
+    companion object {
+        private const val LOW_RATE_THRESHOLD = 0.1
+        private const val HIGH_PRECISION_DECIMALS = 4
+        private const val STANDARD_PRECISION_DECIMALS = 2
+    }
+
     fun mapToSuccessState(
         currencyNames: Map<String, String>,
         ratesResponse: ExchangeRatesResponse,
         pinnedCodes: Set<String>
     ): ExchangeRateState.Success {
         val allUiRates = ratesResponse.rates.map { (code, rate) ->
-            val decimals = if (rate < 0.1) 4 else 2
+            val decimals = if (rate < LOW_RATE_THRESHOLD) HIGH_PRECISION_DECIMALS else STANDARD_PRECISION_DECIMALS
             ExchangeRateUiModel(
                 code = code,
                 name = currencyNames[code] ?: "",

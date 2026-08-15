@@ -9,6 +9,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.io.IOException
 import kotlinx.serialization.SerializationException
 
+private const val HTTP_CLIENT_ERROR_START = 400
+private const val HTTP_CLIENT_ERROR_END = 499
+private const val HTTP_SERVER_ERROR_START = 500
+private const val HTTP_SERVER_ERROR_END = 599
+
 fun Throwable.toDataError(): DataError.Network {
     if (this is CancellationException) throw this
 
@@ -20,8 +25,8 @@ fun Throwable.toDataError(): DataError.Network {
         is ResponseException -> {
             when (response.status.value) {
                 HttpStatusCode.ServiceUnavailable.value -> DataError.Network.SERVICE_UNAVAILABLE
-                in 400..499 -> DataError.Network.CLIENT_ERROR
-                in 500..599 -> DataError.Network.SERVER_ERROR
+                in HTTP_CLIENT_ERROR_START..HTTP_CLIENT_ERROR_END -> DataError.Network.CLIENT_ERROR
+                in HTTP_SERVER_ERROR_START..HTTP_SERVER_ERROR_END -> DataError.Network.SERVER_ERROR
                 else -> DataError.Network.UNKNOWN
             }
         }

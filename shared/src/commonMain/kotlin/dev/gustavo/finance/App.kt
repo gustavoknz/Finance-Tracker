@@ -17,6 +17,7 @@ fun App(
     }
 }
 
+@Suppress("MagicNumber")
 @Composable
 @Preview
 fun AppPreview() {

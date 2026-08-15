@@ -75,6 +75,11 @@ import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
 
 class ExchangeRateScreen : Screen {
+
+    companion object {
+        private const val ANIMATION_DURATION = 500
+    }
+
     @OptIn(KoinExperimentalAPI::class, ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
@@ -108,6 +113,7 @@ class ExchangeRateScreen : Screen {
         )
     }
 
+    @Suppress("LongParameterList")
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun ExchangeRateScreenContent(
@@ -199,6 +205,7 @@ class ExchangeRateScreen : Screen {
         }
     }
 
+    @Suppress("LongParameterList", "LongMethod")
     @Composable
     internal fun RateList(
         base: String,
@@ -272,7 +279,7 @@ class ExchangeRateScreen : Screen {
                         val isClicked = uiModel.code == clickedCurrency
                         AnimatedVisibility(
                             visible = !isClicked,
-                            exit = fadeOut(tween(500)) + slideOutVertically(tween(500)) { -it }
+                            exit = fadeOut(tween(ANIMATION_DURATION)) + slideOutVertically(tween(ANIMATION_DURATION)) { -it }
                         ) {
                             RateItem(
                                 uiModel = uiModel,
@@ -300,7 +307,7 @@ class ExchangeRateScreen : Screen {
                     val isClicked = uiModel.code == clickedCurrency
                     AnimatedVisibility(
                         visible = !isClicked,
-                        exit = fadeOut(tween(500)) + slideOutVertically(tween(500)) { -it }
+                        exit = fadeOut(tween(ANIMATION_DURATION)) + slideOutVertically(tween(ANIMATION_DURATION)) { -it }
                     ) {
                         RateItem(
                             uiModel = uiModel,
@@ -316,6 +323,7 @@ class ExchangeRateScreen : Screen {
         }
     }
 
+    @Suppress("LongMethod")
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     internal fun RateItem(
@@ -420,6 +428,7 @@ internal fun ErrorViewPreview() {
     }
 }
 
+@Suppress("MagicNumber")
 @Preview
 @Composable
 internal fun ExchangeRateScreenPreview() {
