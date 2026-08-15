@@ -12,8 +12,6 @@ import dev.gustavo.finance.domain.usecase.SetBaseCurrencyUseCase
 import dev.gustavo.finance.domain.usecase.TogglePinUseCase
 import dev.gustavo.finance.domain.util.DataError
 import dev.gustavo.finance.domain.util.Result
-import dev.gustavo.finance.util.format
-import dev.gustavo.finance.util.getCurrencySymbol
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -53,6 +51,7 @@ class ExchangeRateViewModel(
     private val setBaseCurrencyUseCase: SetBaseCurrencyUseCase,
     private val getPinnedCurrenciesUseCase: GetPinnedCurrenciesUseCase,
     private val togglePinUseCase: TogglePinUseCase,
+    private val displayMapper: ExchangeRateDisplayMapper,
     getBaseCurrencyUseCase: GetBaseCurrencyUseCase
 ) : ViewModel() {
 
@@ -111,7 +110,7 @@ class ExchangeRateViewModel(
                 currentState
             }
         }
-        .catch { e ->
+        .catch { _ ->
             emit(ExchangeRateState.Error(DataError.Network.UNKNOWN, _currentBase.value))
         }
         .stateIn(
@@ -130,38 +129,11 @@ class ExchangeRateViewModel(
             currenciesResult is Result.Error -> ExchangeRateState.Error(currenciesResult.error, base)
             ratesResult is Result.Error -> ExchangeRateState.Error(ratesResult.error, base)
             currenciesResult is Result.Success && ratesResult is Result.Success -> {
-                createSuccessState(currenciesResult.data, ratesResult.data, pinnedCodes)
+                displayMapper.mapToSuccessState(currenciesResult.data, ratesResult.data, pinnedCodes)
             }
 
             else -> ExchangeRateState.Loading
         }
-    }
-
-    private fun createSuccessState(
-        currencyNames: Map<String, String>,
-        ratesResponse: ExchangeRatesResponse,
-        pinnedCodes: Set<String>
-    ): ExchangeRateState.Success {
-        val allUiRates = ratesResponse.rates.map { (code, rate) ->
-            val decimals = if (rate < 0.1) 4 else 2
-            ExchangeRateUiModel(
-                code = code,
-                name = currencyNames[code] ?: "",
-                symbol = getCurrencySymbol(code),
-                rate = rate,
-                formattedRate = rate.format(decimals),
-                isPinned = pinnedCodes.contains(code)
-            )
-        }
-
-        val (pinned, others) = allUiRates.partition { it.isPinned }
-
-        return ExchangeRateState.Success(
-            base = ratesResponse.base,
-            pinnedRates = pinned.toImmutableList(),
-            otherRates = others.toImmutableList(),
-            lastUpdated = ratesResponse.date
-        )
     }
 
     fun fetchRates(base: String) {
