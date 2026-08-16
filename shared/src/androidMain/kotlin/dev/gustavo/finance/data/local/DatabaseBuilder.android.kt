@@ -9,5 +9,5 @@ fun getAndroidDatabaseBuilder(context: Context): RoomDatabase.Builder<AppDatabas
     return Room.databaseBuilder<AppDatabase>(
         context = context,
         name = dbFile?.absolutePath ?: "finance_tracker.db"
-    )
+    ).addMigrations(MIGRATION_1_2)
 }

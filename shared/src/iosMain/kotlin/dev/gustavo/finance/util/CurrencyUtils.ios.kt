@@ -6,6 +6,7 @@ import platform.Foundation.NSNumberFormatterCurrencyStyle
 import platform.Foundation.NSNumberFormatterDecimalStyle
 
 actual fun getCurrencySymbol(code: String): String {
+    if (code.isEmpty()) return ""
     val formatter = NSNumberFormatter()
     formatter.numberStyle = NSNumberFormatterCurrencyStyle
     formatter.currencyCode = code
