@@ -65,6 +65,20 @@ Alternatively: `./gradlew :androidApp:assembleDebug`
 - **Android**: `./gradlew :shared:testAndroidHostTest`
 - **iOS**: `./gradlew :shared:iosSimulatorArm64Test`
 
+## 🗄️ Database migrations
+
+The project uses Room and has a schema migration for the newer `localTimestamp` fields added to cached entities.
+
+- Version bump: `AppDatabase` has been updated to schema version 2.
+- Migration path: `MIGRATION_1_2` adds `localTimestamp` to the cached rate, currency, and pin tables.
+- Important: destructive fallback was removed to keep upgrade behavior intentional and testable.
+
+## ✅ Recent quality fixes
+
+- Added proper DB migration support for the `localTimestamp` fields.
+- Fixed iOS fallback behavior for unknown currency codes without crashing.
+- Kept Compose animation behavior consistent by delaying click-driven actions long enough to complete exit animations.
+
 ## 🛡️ Static Analysis (Semgrep)
 
 The project is integrated with **Semgrep** for security-focused static analysis across both Kotlin and Swift.
