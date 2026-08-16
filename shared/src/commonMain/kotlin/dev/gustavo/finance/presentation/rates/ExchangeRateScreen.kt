@@ -1,6 +1,7 @@
 package dev.gustavo.finance.presentation.rates
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideOutVertically
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -38,6 +38,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,6 +51,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cafe.adriel.voyager.core.screen.Screen
 import dev.gustavo.finance.domain.util.DataError
+import dev.gustavo.finance.ui.Theme.Durations
+import dev.gustavo.finance.ui.Theme.Spacing
 import finance_tracker.shared.generated.resources.Res
 import finance_tracker.shared.generated.resources.all_currencies_header
 import finance_tracker.shared.generated.resources.base_currency_label
@@ -70,11 +73,13 @@ import finance_tracker.shared.generated.resources.search_placeholder
 import finance_tracker.shared.generated.resources.unpin_content_description
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
-import dev.gustavo.finance.ui.Theme
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
+import kotlin.time.Duration.Companion.milliseconds
 
 class ExchangeRateScreen : Screen {
 
@@ -130,7 +135,7 @@ class ExchangeRateScreen : Screen {
                     title = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(stringResource(Res.string.exchange_rates_title))
-                            Spacer(Modifier.width(Theme.Spacing.small))
+                            Spacer(Modifier.width(Spacing.small))
                             PlatformIcon()
                         }
                     }
@@ -186,7 +191,7 @@ class ExchangeRateScreen : Screen {
         }
 
         Column(
-            modifier = Modifier.fillMaxSize().padding(Theme.Spacing.medium),
+            modifier = Modifier.fillMaxSize().padding(Spacing.medium),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -196,14 +201,14 @@ class ExchangeRateScreen : Screen {
                 color = MaterialTheme.colorScheme.error,
                 textAlign = TextAlign.Center
             )
-            Spacer(modifier = Modifier.height(Theme.Spacing.medium))
+            Spacer(modifier = Modifier.height(Spacing.medium))
             Button(onClick = onRetry) {
                 Text(stringResource(Res.string.retry_button))
             }
         }
     }
 
-@Suppress("LongParameterList", "LongMethod")
+    @Suppress("LongParameterList", "LongMethod")
     @Composable
     internal fun RateList(
         base: String,
@@ -221,9 +226,11 @@ class ExchangeRateScreen : Screen {
             clickedCurrency = null
         }
 
+        val coroutineScope = rememberCoroutineScope()
+
         Column {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(Theme.Spacing.medium),
+                modifier = Modifier.fillMaxWidth().padding(Spacing.medium),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -242,7 +249,7 @@ class ExchangeRateScreen : Screen {
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = onSearchQueryChange,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = Theme.Spacing.medium),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.medium),
                 placeholder = { Text(stringResource(Res.string.search_placeholder)) },
                 leadingIcon = { Text("🔍", modifier = Modifier.semantics { contentDescription = "Search" }) },
                 trailingIcon = {
@@ -260,8 +267,8 @@ class ExchangeRateScreen : Screen {
             )
 
             LazyColumn(
-                contentPadding = PaddingValues(Theme.Spacing.medium),
-                verticalArrangement = Arrangement.spacedBy(Theme.Spacing.small)
+                contentPadding = PaddingValues(Spacing.medium),
+                verticalArrangement = Arrangement.spacedBy(Spacing.small)
             ) {
                 if (pinnedRates.isNotEmpty()) {
                     item {
@@ -270,34 +277,37 @@ class ExchangeRateScreen : Screen {
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(vertical = Theme.Spacing.small)
+                            modifier = Modifier.padding(vertical = Spacing.small)
                         )
                     }
                     items(pinnedRates, key = { "pinned_${it.code}" }) { uiModel ->
                         val isClicked = uiModel.code == clickedCurrency
                         AnimatedVisibility(
                             visible = !isClicked,
-                            exit = fadeOut(tween(Theme.Durations.SHORT)) + slideOutVertically(tween(Theme.Durations.SHORT)) { -it }
+                            exit = fadeOut(tween(Durations.SHORT)) + slideOutVertically(tween(Durations.SHORT)) { -it }
                         ) {
                             RateItem(
                                 uiModel = uiModel,
                                 modifier = Modifier.animateContentSize(),
                                 onClick = {
                                     clickedCurrency = uiModel.code
-                                    onRateClick(uiModel.code)
+                                    coroutineScope.launch {
+                                        delay(Durations.SHORT.toLong().milliseconds)
+                                        onRateClick(uiModel.code)
+                                    }
                                 },
                                 onTogglePin = { onTogglePin(uiModel.code) }
                             )
                         }
                     }
                     item {
-                        Spacer(modifier = Modifier.height(Theme.Spacing.small))
+                        Spacer(modifier = Modifier.height(Spacing.small))
                         Text(
                             text = stringResource(Res.string.all_currencies_header),
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.secondary,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(vertical = Theme.Spacing.small)
+                            modifier = Modifier.padding(vertical = Spacing.small)
                         )
                     }
                 }
@@ -306,14 +316,17 @@ class ExchangeRateScreen : Screen {
                     val isClicked = uiModel.code == clickedCurrency
                     AnimatedVisibility(
                         visible = !isClicked,
-                        exit = fadeOut(tween(Theme.Durations.SHORT)) + slideOutVertically(tween(Theme.Durations.SHORT)) { -it }
+                        exit = fadeOut(tween(Durations.SHORT)) + slideOutVertically(tween(Durations.SHORT)) { -it }
                     ) {
                         RateItem(
                             uiModel = uiModel,
                             modifier = Modifier.animateContentSize(),
                             onClick = {
                                 clickedCurrency = uiModel.code
-                                onRateClick(uiModel.code)
+                                coroutineScope.launch {
+                                    delay(Durations.SHORT.toLong().milliseconds)
+                                    onRateClick(uiModel.code)
+                                }
                             },
                             onTogglePin = { onTogglePin(uiModel.code) }
                         )
@@ -352,7 +365,7 @@ class ExchangeRateScreen : Screen {
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Row(
-                modifier = Modifier.padding(Theme.Spacing.medium),
+                modifier = Modifier.padding(Spacing.medium),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
@@ -377,7 +390,7 @@ class ExchangeRateScreen : Screen {
                             text = " (${uiModel.symbol})",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.padding(start = Theme.Spacing.xSmall)
+                            modifier = Modifier.padding(start = Spacing.xSmall)
                         )
                     }
                     if (uiModel.name.isNotBlank()) {
