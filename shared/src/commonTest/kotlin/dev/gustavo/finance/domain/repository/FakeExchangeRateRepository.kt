@@ -19,7 +19,7 @@ class FakeExchangeRateRepository : ExchangeRateRepository {
     override fun getLatestRates(base: String): Flow<Result<ExchangeRatesResponse, DataError.Network>> = flow {
         emit(Result.Loading())
         if (emitLoadingOnly) return@flow
-        
+
         if (shouldThrow) {
             emit(Result.Error(DataError.Network.UNKNOWN))
         } else {
@@ -30,7 +30,7 @@ class FakeExchangeRateRepository : ExchangeRateRepository {
     override fun getCurrencies(): Flow<Result<Map<String, String>, DataError.Network>> = flow {
         emit(Result.Loading())
         if (emitLoadingOnly) return@flow
-        
+
         if (shouldThrow) {
             emit(Result.Error(DataError.Network.UNKNOWN))
         } else {

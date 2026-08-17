@@ -12,7 +12,7 @@ class ResultTest {
     fun `map should transform success data`() {
         val result: Result<Int, DataError.Network> = Result.Success(10)
         val mapped = result.map { it * 2 }
-        
+
         assertTrue(mapped is Result.Success)
         assertEquals(20, mapped.data)
     }
@@ -69,7 +69,7 @@ class ResultTest {
     fun `map should transform loading data`() {
         val result: Result<Int, DataError.Network> = Result.Loading(10)
         val mapped = result.map { it * 2 }
-        
+
         assertTrue(mapped is Result.Loading)
         assertEquals(20, (mapped as Result.Loading).data)
     }

@@ -30,7 +30,7 @@ class ExchangeRateViewModelTest {
     private lateinit var viewModel: ExchangeRateViewModel
     private lateinit var repository: FakeExchangeRateRepository
     private lateinit var preferencesRepository: FakePreferencesRepository
-    
+
     private val testDispatcher = UnconfinedTestDispatcher()
 
     @BeforeTest
@@ -40,7 +40,7 @@ class ExchangeRateViewModelTest {
         preferencesRepository = FakePreferencesRepository()
         // Use a base different from USD to trigger transitions more clearly
         preferencesRepository.storedBaseCurrency = "BRL"
-        
+
         viewModel = ExchangeRateViewModel(
             getCurrenciesUseCase = GetCurrenciesUseCase(repository),
             getLatestRatesUseCase = GetLatestRatesUseCase(repository),
@@ -66,18 +66,18 @@ class ExchangeRateViewModelTest {
     fun `successful data load should emit Success state`() = runTest {
         val currencies = mapOf("USD" to "Dollar", "EUR" to "Euro")
         val rates = ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08))
-        
+
         repository.currenciesResult = currencies
         repository.latestRatesResult = rates
-        
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { 
-            viewModel.state.collect {} 
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.state.collect {}
         }
-        
+
         viewModel.fetchRates("EUR")
-        
+
         val state = viewModel.state.value
-        
+
         assertTrue(state is ExchangeRateState.Success, "Expected Success state but was $state")
         assertEquals("EUR", state.base)
         assertEquals(1, state.otherRates.size)
@@ -89,15 +89,15 @@ class ExchangeRateViewModelTest {
     @Test
     fun `error in currencies should emit Error state`() = runTest {
         repository.shouldThrow = true
-        
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { 
-            viewModel.state.collect {} 
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.state.collect {}
         }
-        
+
         viewModel.fetchRates("EUR")
-        
+
         val state = viewModel.state.value
-        
+
         assertTrue(state is ExchangeRateState.Error, "Expected Error state but was $state")
         assertEquals(DataError.Network.UNKNOWN, state.error)
         assertEquals("EUR", state.base)
@@ -107,15 +107,15 @@ class ExchangeRateViewModelTest {
     fun `error in rates should emit Error state`() = runTest {
         repository.currenciesResult = mapOf("USD" to "Dollar")
         repository.shouldThrow = true
-        
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { 
-            viewModel.state.collect {} 
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.state.collect {}
         }
-        
+
         viewModel.fetchRates("EUR")
-        
+
         val state = viewModel.state.value
-        
+
         assertTrue(state is ExchangeRateState.Error, "Expected Error state but was $state")
         assertEquals("EUR", state.base)
     }
@@ -125,22 +125,22 @@ class ExchangeRateViewModelTest {
         val currencies = mapOf("USD" to "Dollar", "EUR" to "Euro")
         repository.currenciesResult = currencies
         repository.latestRatesResult = ExchangeRatesResponse(1.0, "USD", "2024-05-20", mapOf("EUR" to 0.92))
-        
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { 
-            viewModel.state.collect {} 
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.state.collect {}
         }
-        
+
         viewModel.fetchRates("USD")
         assertEquals("USD", (viewModel.state.value as ExchangeRateState.Success).base)
-        
+
         repository.latestRatesResult = ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08))
         viewModel.fetchRates("EUR")
-        
+
         val newState = viewModel.state.value as ExchangeRateState.Success
         assertEquals("EUR", newState.base)
         assertEquals("EUR", preferencesRepository.storedBaseCurrency)
     }
-    
+
     @Test
     fun `loading state when data is already success should show refreshing`() = runTest {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.state.collect {} }
@@ -149,7 +149,7 @@ class ExchangeRateViewModelTest {
         repository.currenciesResult = mapOf("USD" to "Dollar", "EUR" to "Euro")
         repository.latestRatesResult = ExchangeRatesResponse(1.0, "USD", "2024-05-20", mapOf("EUR" to 0.92))
         viewModel.fetchRates("USD")
-        
+
         val initialState = viewModel.state.value
         assertTrue(initialState is ExchangeRateState.Success)
         assertFalse(initialState.isRefreshing)
@@ -157,11 +157,14 @@ class ExchangeRateViewModelTest {
         // 2. Trigger loading for DIFFERENT base to see transition
         repository.emitLoadingOnly = true
         viewModel.fetchRates("EUR")
-        
+
         val refreshingState = viewModel.state.value
-        assertTrue(refreshingState is ExchangeRateState.Success, "Expected Success (refreshing) but was $refreshingState")
+        assertTrue(
+            refreshingState is ExchangeRateState.Success,
+            "Expected Success (refreshing) but was $refreshingState"
+        )
         assertTrue(refreshingState.isRefreshing)
-        assertEquals("USD", refreshingState.base) 
+        assertEquals("USD", refreshingState.base)
     }
 
     @Test
@@ -169,7 +172,7 @@ class ExchangeRateViewModelTest {
         // 1. Initial success
         repository.currenciesResult = mapOf("USD" to "Dollar")
         repository.latestRatesResult = ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08))
-        
+
         val events = mutableListOf<ExchangeRateUiEvent>()
         val eventJob = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.uiEvents.collect { events.add(it) }
@@ -189,7 +192,7 @@ class ExchangeRateViewModelTest {
         assertEquals(DataError.Network.UNKNOWN, state.syncError)
         assertEquals(1, events.size)
         assertTrue(events[0] is ExchangeRateUiEvent.ShowOfflineNotification)
-        
+
         eventJob.cancel()
     }
 
@@ -198,9 +201,10 @@ class ExchangeRateViewModelTest {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.state.collect {} }
 
         repository.currenciesResult = mapOf("USD" to "Dollar", "EUR" to "Euro", "BRL" to "Real")
-        repository.latestRatesResult = ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08, "BRL" to 5.5))
+        repository.latestRatesResult =
+            ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08, "BRL" to 5.5))
         viewModel.fetchRates("EUR")
-        
+
         val initialState = viewModel.state.value as ExchangeRateState.Success
         assertEquals(2, initialState.otherRates.size)
 

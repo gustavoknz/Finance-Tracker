@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.map
 class FakePinDao : PinDao {
     private val pins = MutableStateFlow<Set<String>>(emptySet())
 
-    override fun getAllPinnedCodes(): Flow<List<String>> = 
+    override fun getAllPinnedCodes(): Flow<List<String>> =
         pins.map { it.toList() }
 
     override suspend fun insertPin(pin: PinEntity) {
@@ -20,6 +20,6 @@ class FakePinDao : PinDao {
         pins.value -= pin.currencyCode
     }
 
-    override suspend fun isPinned(code: String): Boolean = 
+    override suspend fun isPinned(code: String): Boolean =
         pins.value.contains(code)
 }

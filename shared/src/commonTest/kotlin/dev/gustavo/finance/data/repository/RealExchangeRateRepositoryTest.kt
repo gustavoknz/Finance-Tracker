@@ -57,6 +57,35 @@ class RealExchangeRateRepositoryTest {
     }
 
     @Test
+    fun `getLatestRates should refresh stale cache with network data`() = runTest {
+        val base = "USD"
+        val staleTimestamp = kotlin.time.Clock.System.now().toEpochMilliseconds() - 31 * 60 * 1000L
+        metadataDao.insertMetadata(dev.gustavo.finance.data.local.MetadataEntity("rates_$base", staleTimestamp))
+        exchangeRateDao.insertRates(
+            listOf(
+                ExchangeRateEntity(
+                    base,
+                    "EUR",
+                    0.91,
+                    "2024-05-19",
+                    localTimestamp = staleTimestamp
+                )
+            )
+        )
+
+        val expectedResponse = ExchangeRatesResponse(1.0, base, "2024-05-20", mapOf("EUR" to 0.92, "GBP" to 0.78))
+        service.latestRatesResult = expectedResponse
+
+        val results = repository.getLatestRates(base).take(3).toList()
+        val successResults = results.filterIsInstance<Result.Success<ExchangeRatesResponse>>()
+
+        assertTrue(results.first() is Result.Loading)
+        assertTrue(successResults.isNotEmpty())
+        assertEquals(expectedResponse, successResults.last().data)
+        assertTrue(metadataDao.getLastUpdatedTimestamp("rates_$base")!! >= staleTimestamp)
+    }
+
+    @Test
     fun `getLatestRates should emit data from cache if network fails`() = runTest {
         val base = "USD"
         val cachedRate = ExchangeRateEntity(base, "EUR", 0.92, "2024-05-19")
@@ -83,13 +112,39 @@ class RealExchangeRateRepositoryTest {
     }
 
     @Test
+    fun `getCurrencies should refresh stale cache with fresh network data`() = runTest {
+        val staleTimestamp = kotlin.time.Clock.System.now().toEpochMilliseconds() - 25 * 60 * 60 * 1000L
+        metadataDao.insertMetadata(dev.gustavo.finance.data.local.MetadataEntity("currencies", staleTimestamp))
+        currencyDao.insertCurrencies(
+            listOf(
+                dev.gustavo.finance.data.local.CurrencyEntity(
+                    "USD",
+                    "Dollar",
+                    localTimestamp = staleTimestamp
+                )
+            )
+        )
+
+        val expectedCurrencies = mapOf("USD" to "Dollar", "EUR" to "Euro")
+        service.currenciesResult = expectedCurrencies
+
+        val results = repository.getCurrencies().take(3).toList()
+        val successResults = results.filterIsInstance<Result.Success<Map<String, String>>>()
+
+        assertTrue(results.first() is Result.Loading)
+        assertTrue(successResults.isNotEmpty())
+        assertEquals(expectedCurrencies, successResults.last().data)
+        assertTrue(metadataDao.getLastUpdatedTimestamp("currencies")!! >= staleTimestamp)
+    }
+
+    @Test
     fun `getCurrencies should return from cache if not stale`() = runTest {
         val cachedCurrencies = mapOf("USD" to "Dollar")
         currencyDao.insertCurrencies(listOf(dev.gustavo.finance.data.local.CurrencyEntity("USD", "Dollar")))
-        
+
         val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
         metadataDao.insertMetadata(dev.gustavo.finance.data.local.MetadataEntity("currencies", now))
-        
+
         service.shouldThrow = true // Should not be called
 
         val results = repository.getCurrencies().take(2).toList()

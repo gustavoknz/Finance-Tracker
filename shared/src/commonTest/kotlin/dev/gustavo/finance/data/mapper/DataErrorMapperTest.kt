@@ -18,7 +18,7 @@ class DataErrorMapperTest {
         val exception = Exception("Random error")
         assertEquals(DataError.Network.UNKNOWN, exception.toDataError())
     }
-    
+
     // Note: Testing ResponseException subtypes like ClientRequestException 
     // requires a mock HttpResponse which is hard to create manually in KMP without MockK.
     // We'll focus on the branches we can easily trigger or add more if we add a mocking library.
