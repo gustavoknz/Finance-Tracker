@@ -1,7 +1,6 @@
 package dev.gustavo.finance.presentation.rates
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideOutVertically
@@ -277,18 +276,18 @@ class ExchangeRateScreen : Screen {
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(vertical = Spacing.small)
+                            modifier = Modifier.padding(vertical = Spacing.small).animateItem()
                         )
                     }
                     items(pinnedRates, key = { "pinned_${it.code}" }) { uiModel ->
                         val isClicked = uiModel.code == clickedCurrency
                         AnimatedVisibility(
                             visible = !isClicked,
-                            exit = fadeOut(tween(Durations.SHORT)) + slideOutVertically(tween(Durations.SHORT)) { -it }
+                            exit = fadeOut(tween(Durations.SHORT)) + slideOutVertically(tween(Durations.SHORT)) { -it },
+                            modifier = Modifier.animateItem()
                         ) {
                             RateItem(
                                 uiModel = uiModel,
-                                modifier = Modifier.animateContentSize(),
                                 onClick = {
                                     clickedCurrency = uiModel.code
                                     coroutineScope.launch {
@@ -307,7 +306,7 @@ class ExchangeRateScreen : Screen {
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.secondary,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(vertical = Spacing.small)
+                            modifier = Modifier.padding(vertical = Spacing.small).animateItem()
                         )
                     }
                 }
@@ -316,11 +315,11 @@ class ExchangeRateScreen : Screen {
                     val isClicked = uiModel.code == clickedCurrency
                     AnimatedVisibility(
                         visible = !isClicked,
-                        exit = fadeOut(tween(Durations.SHORT)) + slideOutVertically(tween(Durations.SHORT)) { -it }
+                        exit = fadeOut(tween(Durations.SHORT)) + slideOutVertically(tween(Durations.SHORT)) { -it },
+                        modifier = Modifier.animateItem()
                     ) {
                         RateItem(
                             uiModel = uiModel,
-                            modifier = Modifier.animateContentSize(),
                             onClick = {
                                 clickedCurrency = uiModel.code
                                 coroutineScope.launch {
