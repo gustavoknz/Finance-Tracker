@@ -15,6 +15,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class KtorCurrencyServiceTest {
 
@@ -70,5 +71,26 @@ class KtorCurrencyServiceTest {
 
         assertEquals(expectedCurrencies, result)
         assertEquals("https://api.frankfurter.dev/v1/currencies", mockEngine.requestHistory[0].url.toString())
+    }
+
+    @Test
+    fun `getLatestRates should throw when network fails`() = runTest {
+        mockEngine = MockEngine { _ ->
+            respond(
+                content = "Error",
+                status = HttpStatusCode.InternalServerError
+            )
+        }
+        httpClient = HttpClient(mockEngine) {
+            install(ContentNegotiation) { json(json) }
+            defaultRequest { url("https://api.frankfurter.dev/v1/") }
+            // Note: Ktor throws for non-2xx only if we install Logging or specific plugins, 
+            // but .body() might fail if it can't parse "Error" as expected JSON.
+        }
+        service = KtorCurrencyService(httpClient)
+
+        assertFailsWith<Exception> {
+            service.getLatestRates("USD")
+        }
     }
 }

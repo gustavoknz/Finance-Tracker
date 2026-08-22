@@ -104,6 +104,7 @@ kotlin {
         getByName("androidHostTest") {
             dependencies {
                 implementation(libs.robolectric)
+                implementation(libs.androidx.test.core)
             }
         }
     }

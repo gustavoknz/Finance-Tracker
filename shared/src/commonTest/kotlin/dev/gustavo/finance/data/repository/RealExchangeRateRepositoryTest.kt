@@ -9,6 +9,7 @@ import dev.gustavo.finance.data.local.ExchangeRateEntity
 import dev.gustavo.finance.domain.model.ExchangeRatesResponse
 import dev.gustavo.finance.domain.util.Result
 import dev.gustavo.finance.util.CoroutineDispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -18,6 +19,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class RealExchangeRateRepositoryTest {
 
     private lateinit var service: FakeCurrencyService
@@ -160,6 +162,31 @@ class RealExchangeRateRepositoryTest {
         service.shouldThrow = true
 
         val results = repository.getLatestRates(base).take(2).toList()
+
+        assertTrue(results[0] is Result.Loading)
+        assertTrue(results[1] is Result.Error)
+    }
+
+    @Test
+    fun `getCurrencies should return from cache if network fails`() = runTest {
+        val cachedCurrencies = mapOf("USD" to "Dollar")
+        currencyDao.insertCurrencies(listOf(dev.gustavo.finance.data.local.CurrencyEntity("USD", "Dollar")))
+        
+        metadataDao.insertMetadata(dev.gustavo.finance.data.local.MetadataEntity("currencies", 0L)) // Stale
+        service.shouldThrow = true
+
+        val results = repository.getCurrencies().take(2).toList()
+
+        assertTrue(results[0] is Result.Loading)
+        assertTrue(results[1] is Result.Success)
+        assertEquals(cachedCurrencies, (results[1] as Result.Success).data)
+    }
+
+    @Test
+    fun `getCurrencies should emit error if network fails and no cache`() = runTest {
+        service.shouldThrow = true
+
+        val results = repository.getCurrencies().take(2).toList()
 
         assertTrue(results[0] is Result.Loading)
         assertTrue(results[1] is Result.Error)

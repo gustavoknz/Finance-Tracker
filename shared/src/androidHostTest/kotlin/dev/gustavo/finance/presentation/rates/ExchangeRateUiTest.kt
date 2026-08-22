@@ -1,10 +1,10 @@
 package dev.gustavo.finance.presentation.rates
 
-import androidx.compose.material3.Text
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.v2.runComposeUiTest
+import kotlinx.collections.immutable.persistentListOf
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -16,22 +16,50 @@ import kotlin.test.Test
 class ExchangeRateUiTest {
 
     @Test
-    fun testExchangeRateScreenContent() = runComposeUiTest {
+    fun testSuccessState() = runComposeUiTest {
+        val rates = persistentListOf(
+            ExchangeRateUiModel("USD", "Dollar", "$", 1.08, "1.08"),
+            ExchangeRateUiModel("GBP", "Pound", "£", 0.85, "0.85")
+        )
+
         setContent {
-            ExchangeRateUiModel(
-                code = "USD",
-                name = "United States Dollar",
-                symbol = "$",
-                rate = 1.0,
-                formattedRate = "1.00"
-            ).let { _ ->
-                // Since RateItem is private, we can't test it directly easily 
-                // unless we make it internal or test through a public entry point.
-                // For now, let's just test that we can render a simple Text.
-                Text("USD ($)")
-            }
+            ExchangeRateScreen().ExchangeRateScreenContent(
+                state = ExchangeRateState.Success(
+                    base = "EUR",
+                    pinnedRates = persistentListOf(),
+                    otherRates = rates,
+                    lastUpdated = "2024-05-20"
+                ),
+                searchQuery = "",
+                onSearchQueryChange = {},
+                onRefresh = {},
+                onRateClick = {},
+                onTogglePin = {}
+            )
         }
 
-        onNodeWithText("USD ($)").assertIsDisplayed()
+        onNodeWithText("Base: EUR").assertIsDisplayed()
+        onNodeWithText("USD").assertIsDisplayed()
+        onNodeWithText("GBP").assertIsDisplayed()
+    }
+
+    @Test
+    fun testErrorState() = runComposeUiTest {
+        setContent {
+            ExchangeRateScreen().ExchangeRateScreenContent(
+                state = ExchangeRateState.Error(
+                    error = dev.gustavo.finance.domain.util.DataError.Network.NO_INTERNET,
+                    base = "EUR"
+                ),
+                searchQuery = "",
+                onSearchQueryChange = {},
+                onRefresh = {},
+                onRateClick = {},
+                onTogglePin = {}
+            )
+        }
+
+        onNodeWithText("Check your internet connection and try again.").assertIsDisplayed()
+        onNodeWithText("Retry").assertIsDisplayed()
     }
 }

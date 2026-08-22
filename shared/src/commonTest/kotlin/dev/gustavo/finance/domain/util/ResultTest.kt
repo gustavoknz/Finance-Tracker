@@ -71,7 +71,7 @@ class ResultTest {
         val mapped = result.map { it * 2 }
 
         assertTrue(mapped is Result.Loading)
-        assertEquals(20, (mapped as Result.Loading).data)
+        assertEquals(20, mapped.data)
     }
 
     @Test
@@ -79,5 +79,15 @@ class ResultTest {
         val result = Result.Success("data").asEmptyData()
         assertTrue(result is Result.Success)
         assertEquals(Unit, result.data)
+    }
+
+    @Test
+    fun `onSuccess and onError should not be called for Loading`() {
+        var successCalled = false
+        var errorCalled = false
+        val loading = Result.Loading(1)
+        loading.onSuccess { successCalled = true }.onError { errorCalled = true }
+        assertFalse(successCalled)
+        assertFalse(errorCalled)
     }
 }
