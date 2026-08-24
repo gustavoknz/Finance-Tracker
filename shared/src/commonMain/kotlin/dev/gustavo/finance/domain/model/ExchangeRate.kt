@@ -9,9 +9,3 @@ data class ExchangeRatesResponse(
     val date: String,
     val rates: Map<String, Double>
 )
-
-@Serializable
-data class Currency(
-    val code: String,
-    val name: String
-)
