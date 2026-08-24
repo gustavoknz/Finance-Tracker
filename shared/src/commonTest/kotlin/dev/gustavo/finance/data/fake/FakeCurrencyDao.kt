@@ -15,6 +15,4 @@ class FakeCurrencyDao : CurrencyDao {
     override suspend fun insertCurrencies(currencies: List<CurrencyEntity>) {
         currenciesFlow.value = currencies
     }
-
-    override suspend fun getCount(): Int = currenciesFlow.value.size
 }
