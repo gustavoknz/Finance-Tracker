@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "409049055a0244d8c1e4cc2418deb40e",
+    "identityHash": "893c8d19760777e3870634127027c963",
     "entities": [
       {
         "tableName": "CurrencyEntity",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`code` TEXT NOT NULL, `name` TEXT NOT NULL, `localTimestamp` INTEGER NOT NULL, PRIMARY KEY(`code`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`code` TEXT NOT NULL, `name` TEXT NOT NULL, PRIMARY KEY(`code`))",
         "fields": [
           {
             "fieldPath": "code",
@@ -19,12 +19,6 @@
             "columnName": "name",
             "affinity": "TEXT",
             "notNull": true
-          },
-          {
-            "fieldPath": "localTimestamp",
-            "columnName": "localTimestamp",
-            "affinity": "INTEGER",
-            "notNull": true
           }
         ],
         "primaryKey": {
@@ -36,7 +30,7 @@
       },
       {
         "tableName": "ExchangeRateEntity",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`baseCode` TEXT NOT NULL, `targetCode` TEXT NOT NULL, `rate` REAL NOT NULL, `date` TEXT NOT NULL, `localTimestamp` INTEGER NOT NULL, PRIMARY KEY(`baseCode`, `targetCode`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`baseCode` TEXT NOT NULL, `targetCode` TEXT NOT NULL, `rate` REAL NOT NULL, `date` TEXT NOT NULL, PRIMARY KEY(`baseCode`, `targetCode`))",
         "fields": [
           {
             "fieldPath": "baseCode",
@@ -60,12 +54,6 @@
             "fieldPath": "date",
             "columnName": "date",
             "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "localTimestamp",
-            "columnName": "localTimestamp",
-            "affinity": "INTEGER",
             "notNull": true
           }
         ],
@@ -103,18 +91,12 @@
       },
       {
         "tableName": "PinEntity",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`currencyCode` TEXT NOT NULL, `localTimestamp` INTEGER NOT NULL, PRIMARY KEY(`currencyCode`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`currencyCode` TEXT NOT NULL, PRIMARY KEY(`currencyCode`))",
         "fields": [
           {
             "fieldPath": "currencyCode",
             "columnName": "currencyCode",
             "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "localTimestamp",
-            "columnName": "localTimestamp",
-            "affinity": "INTEGER",
             "notNull": true
           }
         ],
@@ -128,7 +110,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '409049055a0244d8c1e4cc2418deb40e')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '893c8d19760777e3870634127027c963')"
     ]
   }
 }
