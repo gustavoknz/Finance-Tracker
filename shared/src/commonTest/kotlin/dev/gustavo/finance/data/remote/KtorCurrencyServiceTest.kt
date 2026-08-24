@@ -4,18 +4,22 @@ import dev.gustavo.finance.domain.model.ExchangeRatesResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.io.IOException
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 class KtorCurrencyServiceTest {
 
@@ -84,13 +88,50 @@ class KtorCurrencyServiceTest {
         httpClient = HttpClient(mockEngine) {
             install(ContentNegotiation) { json(json) }
             defaultRequest { url("https://api.frankfurter.dev/v1/") }
-            // Note: Ktor throws for non-2xx only if we install Logging or specific plugins, 
-            // but .body() might fail if it can't parse "Error" as expected JSON.
         }
         service = KtorCurrencyService(httpClient)
 
         assertFailsWith<Exception> {
             service.getLatestRates("USD")
         }
+    }
+
+    @Test
+    fun `getLatestRates should retry on server error and eventually succeed`() = runTest {
+        val expectedResponse = ExchangeRatesResponse(1.0, "USD", "2024-05-20", mapOf("EUR" to 0.92))
+        val responseJson = json.encodeToString(expectedResponse)
+        var callCount = 0
+        
+        mockEngine = MockEngine { _ ->
+            callCount++
+            if (callCount < 3) {
+                respond(
+                    content = "Service Unavailable",
+                    status = HttpStatusCode.ServiceUnavailable
+                )
+            } else {
+                respond(
+                    content = responseJson,
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                )
+            }
+        }
+        
+        httpClient = HttpClient(mockEngine) {
+            install(ContentNegotiation) { json(json) }
+            defaultRequest { url("https://api.frankfurter.dev/v1/") }
+            install(HttpRequestRetry) {
+                maxRetries = 3
+                retryIf { _, response -> !response.status.isSuccess() && response.status.value >= 500 }
+                delayMillis { 0 } // No delay in tests
+            }
+        }
+        service = KtorCurrencyService(httpClient)
+
+        val result = service.getLatestRates("USD")
+
+        assertEquals(expectedResponse, result)
+        assertEquals(3, callCount)
     }
 }
