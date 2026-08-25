@@ -7,6 +7,9 @@ import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
+import io.ktor.client.plugins.logging.Logging
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
@@ -16,6 +19,7 @@ import kotlinx.serialization.json.Json
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
+import co.touchlab.kermit.Logger as KermitLogger
 
 val networkModule = module {
     single {
@@ -35,6 +39,14 @@ val networkModule = module {
                 requestTimeoutMillis = 15_000
                 connectTimeoutMillis = 15_000
                 socketTimeoutMillis = 15_000
+            }
+            install(Logging) {
+                logger = object : Logger {
+                    override fun log(message: String) {
+                        KermitLogger.withTag("HttpClient").d { message }
+                    }
+                }
+                level = LogLevel.ALL
             }
             install(HttpRequestRetry) {
                 maxRetries = 3

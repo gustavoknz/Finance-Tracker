@@ -14,7 +14,9 @@ import dev.gustavo.finance.domain.model.ExchangeRatesResponse
 import dev.gustavo.finance.domain.repository.ExchangeRateRepository
 import dev.gustavo.finance.domain.util.DataError
 import dev.gustavo.finance.domain.util.Result
+import dev.gustavo.finance.domain.util.getOrNull
 import dev.gustavo.finance.util.CoroutineDispatchers
+import co.touchlab.kermit.Logger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -34,21 +36,28 @@ class RealExchangeRateRepository(
     private val dispatchers: CoroutineDispatchers
 ) : ExchangeRateRepository {
 
+    private val logger = Logger.withTag("ExchangeRateRepository")
+
     companion object {
         private const val CURRENCIES_TTL = 24 * 60 * 60 * 1000L // 24 hours
         private const val RATES_TTL = 30 * 60 * 1000L // 30 minutes
     }
 
     override fun getLatestRates(base: String): Flow<Result<ExchangeRatesResponse, DataError.Network>> = channelFlow {
+        logger.d { "getLatestRates(base=$base)" }
         val cachedEntities = exchangeRateDao.getRatesByBaseOnce(base)
         val cachedResponse = if (cachedEntities.isNotEmpty()) {
+            logger.d { "Found ${cachedEntities.size} cached rates for $base" }
             ExchangeRatesResponse(
                 amount = 1.0,
                 base = base,
                 date = cachedEntities.first().date,
                 rates = cachedEntities.associate { it.targetCode to it.rate }
             )
-        } else null
+        } else {
+            logger.d { "No cached rates found for $base" }
+            null
+        }
 
         send(Result.Loading(cachedResponse))
 
@@ -63,6 +72,7 @@ class RealExchangeRateRepository(
                 }
 
                 if (isStale) {
+                    logger.d { "Rates for $base are stale or missing, fetching from network..." }
                     val remoteResponse = currencyService.getLatestRates(base)
                     val entities = remoteResponse.rates.map { (targetCode, rate) ->
                         ExchangeRateEntity(
@@ -75,8 +85,12 @@ class RealExchangeRateRepository(
                     }
                     exchangeRateDao.insertRates(entities)
                     metadataDao.insertMetadata(MetadataEntity("rates_$base", currentTimeMillis))
+                    logger.d { "Successfully updated ${entities.size} rates for $base in database" }
+                } else {
+                    logger.d { "Rates for $base are still fresh (TTL)" }
                 }
             } catch (e: Throwable) {
+                logger.e(e) { "Error fetching latest rates for $base" }
                 send(Result.Error(e.toDataError()))
             }
         }
@@ -95,17 +109,26 @@ class RealExchangeRateRepository(
                         )
                     } else null
                 }
-                .collect { send(it) }
+                .collect { 
+                    logger.d { "Emitting ${it.getOrNull()?.rates?.size ?: 0} rates for $base from DB flow" }
+                    send(it) 
+                }
         } catch (e: Throwable) {
+            logger.e(e) { "Error observing rates for $base in DB" }
             send(Result.Error(e.toDataError()))
         }
     }.flowOn(dispatchers.io).distinctUntilChanged()
 
     override fun getCurrencies(): Flow<Result<Map<String, String>, DataError.Network>> = channelFlow {
+        logger.d { "getCurrencies()" }
         val cachedEntities = currencyDao.getAllCurrenciesOnce()
         val cachedMap = if (cachedEntities.isNotEmpty()) {
+            logger.d { "Found ${cachedEntities.size} cached currencies" }
             cachedEntities.associate { it.code to it.name }
-        } else null
+        } else {
+            logger.d { "No cached currencies found" }
+            null
+        }
 
         send(Result.Loading(cachedMap))
 
@@ -120,14 +143,19 @@ class RealExchangeRateRepository(
                 }
 
                 if (isStale) {
+                    logger.d { "Currencies are stale or missing, fetching from network..." }
                     val remoteCurrencies = currencyService.getCurrencies()
                     val entities = remoteCurrencies.map { (code, name) ->
                         CurrencyEntity(code = code, name = name, localTimestamp = currentTimeMillis)
                     }
                     currencyDao.insertCurrencies(entities)
                     metadataDao.insertMetadata(MetadataEntity("currencies", currentTimeMillis))
+                    logger.d { "Successfully updated ${entities.size} currencies in database" }
+                } else {
+                    logger.d { "Currencies are still fresh (TTL)" }
                 }
             } catch (e: Throwable) {
+                logger.e(e) { "Error fetching currencies" }
                 send(Result.Error(e.toDataError()))
             }
         }
@@ -139,22 +167,32 @@ class RealExchangeRateRepository(
                         Result.Success(entities.associate { it.code to it.name })
                     } else null
                 }
-                .collect { send(it) }
+                .collect { 
+                    logger.d { "Emitting ${it.getOrNull()?.size ?: 0} currencies from DB flow" }
+                    send(it) 
+                }
         } catch (e: Throwable) {
+            logger.e(e) { "Error observing currencies in DB" }
             send(Result.Error(e.toDataError()))
         }
     }.flowOn(dispatchers.io).distinctUntilChanged()
 
     override fun getPinnedCurrencies(): Flow<Set<String>> =
         pinDao.getAllPinnedCodes()
-            .map { it.toSet() }
+            .map { 
+                logger.d { "Found ${it.size} pinned codes in DB" }
+                it.toSet() 
+            }
             .flowOn(dispatchers.io)
 
     override suspend fun togglePin(code: String) = withContext(dispatchers.io) {
+        logger.d { "togglePin(code=$code)" }
         val now = Clock.System.now().toEpochMilliseconds()
         if (pinDao.isPinned(code)) {
+            logger.d { "Unpinning $code" }
             pinDao.deletePin(PinEntity(code, localTimestamp = now))
         } else {
+            logger.d { "Pinning $code" }
             pinDao.insertPin(PinEntity(code, localTimestamp = now))
         }
     }
