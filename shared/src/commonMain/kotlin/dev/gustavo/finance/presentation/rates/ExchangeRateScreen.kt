@@ -41,7 +41,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -141,10 +143,14 @@ class ExchangeRateScreen : Screen {
                 )
             }
         ) { padding ->
-            Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+            Box(modifier = Modifier.fillMaxSize().padding(padding).testTag("exchange_rate_content")) {
                 when (state) {
                     is ExchangeRateState.Loading -> {
-                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .testTag("loading_indicator")
+                        )
                     }
 
                     is ExchangeRateState.Success -> {
@@ -190,7 +196,10 @@ class ExchangeRateScreen : Screen {
         }
 
         Column(
-            modifier = Modifier.fillMaxSize().padding(Spacing.medium),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(Spacing.medium)
+                .testTag("error_view"),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -248,7 +257,10 @@ class ExchangeRateScreen : Screen {
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = onSearchQueryChange,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.medium),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Spacing.medium)
+                    .testTag("search_field"),
                 placeholder = { Text(stringResource(Res.string.search_placeholder)) },
                 leadingIcon = { Text("🔍", modifier = Modifier.semantics { contentDescription = "Search" }) },
                 trailingIcon = {
@@ -256,6 +268,7 @@ class ExchangeRateScreen : Screen {
                         IconButton(
                             onClick = { onSearchQueryChange("") },
                             modifier = Modifier.semantics { contentDescription = clearSearchDesc }
+                                .testTag("clear_search_button")
                         ) {
                             Text("✕")
                         }
@@ -276,7 +289,11 @@ class ExchangeRateScreen : Screen {
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(vertical = Spacing.small).animateItem()
+                            modifier = Modifier
+                                .padding(vertical = Spacing.small)
+                                .animateItem()
+                                .semantics { heading() }
+                                .testTag("header_pinned")
                         )
                     }
                     items(pinnedRates, key = { "pinned_${it.code}" }) { uiModel ->
@@ -306,7 +323,11 @@ class ExchangeRateScreen : Screen {
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.secondary,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(vertical = Spacing.small).animateItem()
+                            modifier = Modifier
+                                .padding(vertical = Spacing.small)
+                                .animateItem()
+                                .semantics { heading() }
+                                .testTag("header_all")
                         )
                     }
                 }
@@ -360,7 +381,8 @@ class ExchangeRateScreen : Screen {
                 .fillMaxWidth()
                 .semantics(mergeDescendants = true) {
                     contentDescription = description
-                },
+                }
+                .testTag("rate_item_${uiModel.code}"),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Row(

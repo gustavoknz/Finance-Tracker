@@ -1,5 +1,8 @@
 package dev.gustavo.finance.presentation.rates
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class ExchangeRateUiModel(
     val code: String,
     val name: String,
