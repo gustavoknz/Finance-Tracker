@@ -78,6 +78,7 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.datetime)
+            implementation(libs.kotlinx.atomicfu)
             api(libs.kotlinx.collections.immutable)
 
             // DI

@@ -9,6 +9,7 @@ import dev.gustavo.finance.data.local.ExchangeRateEntity
 import dev.gustavo.finance.domain.model.ExchangeRatesResponse
 import dev.gustavo.finance.domain.util.Result
 import dev.gustavo.finance.util.CoroutineDispatchers
+import dev.gustavo.finance.util.FakeMetricsCollector
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
@@ -27,6 +28,7 @@ class RealExchangeRateRepositoryTest {
     private lateinit var exchangeRateDao: FakeExchangeRateDao
     private lateinit var metadataDao: FakeMetadataDao
     private lateinit var pinDao: FakePinDao
+    private lateinit var metricsCollector: FakeMetricsCollector
     private lateinit var repository: RealExchangeRateRepository
     private val testDispatcher = UnconfinedTestDispatcher()
     private val dispatchers = CoroutineDispatchers(
@@ -42,7 +44,8 @@ class RealExchangeRateRepositoryTest {
         exchangeRateDao = FakeExchangeRateDao()
         metadataDao = FakeMetadataDao()
         pinDao = FakePinDao()
-        repository = RealExchangeRateRepository(service, currencyDao, exchangeRateDao, metadataDao, pinDao, dispatchers)
+        metricsCollector = FakeMetricsCollector()
+        repository = RealExchangeRateRepository(service, currencyDao, exchangeRateDao, metadataDao, pinDao, dispatchers, metricsCollector)
     }
 
     @Test
@@ -190,5 +193,21 @@ class RealExchangeRateRepositoryTest {
 
         assertTrue(results[0] is Result.Loading)
         assertTrue(results[1] is Result.Error)
+    }
+
+    @Test
+    fun `metrics should track hits misses and refreshes correctly`() = runTest {
+        val base = "USD"
+        
+        // 1. Cache Miss + Refresh
+        service.latestRatesResult = ExchangeRatesResponse(1.0, base, "2024-05-20", mapOf("EUR" to 0.92))
+        repository.getLatestRates(base).take(2).toList()
+        
+        assertEquals(1, metricsCollector.cacheMissCount)
+        assertEquals(1, metricsCollector.refreshCount)
+        
+        // 2. Cache Hit (Fresh data)
+        repository.getLatestRates(base).take(1).toList()
+        assertEquals(1, metricsCollector.cacheHitCount)
     }
 }

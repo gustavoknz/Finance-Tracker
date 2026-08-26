@@ -16,6 +16,7 @@ import dev.gustavo.finance.domain.util.DataError
 import dev.gustavo.finance.domain.util.Result
 import dev.gustavo.finance.domain.util.getOrNull
 import dev.gustavo.finance.util.CoroutineDispatchers
+import dev.gustavo.finance.util.MetricsCollector
 import co.touchlab.kermit.Logger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -33,7 +34,8 @@ class RealExchangeRateRepository(
     private val exchangeRateDao: ExchangeRateDao,
     private val metadataDao: MetadataDao,
     private val pinDao: PinDao,
-    private val dispatchers: CoroutineDispatchers
+    private val dispatchers: CoroutineDispatchers,
+    private val metricsCollector: MetricsCollector
 ) : ExchangeRateRepository {
 
     private val logger = Logger.withTag("ExchangeRateRepository")
@@ -48,6 +50,7 @@ class RealExchangeRateRepository(
         val cachedEntities = exchangeRateDao.getRatesByBaseOnce(base)
         val cachedResponse = if (cachedEntities.isNotEmpty()) {
             logger.d { "Found ${cachedEntities.size} cached rates for $base" }
+            metricsCollector.trackCacheHit("rates_$base")
             ExchangeRatesResponse(
                 amount = 1.0,
                 base = base,
@@ -56,6 +59,7 @@ class RealExchangeRateRepository(
             )
         } else {
             logger.d { "No cached rates found for $base" }
+            metricsCollector.trackCacheMiss("rates_$base")
             null
         }
 
@@ -73,6 +77,7 @@ class RealExchangeRateRepository(
 
                 if (isStale) {
                     logger.d { "Rates for $base are stale or missing, fetching from network..." }
+                    metricsCollector.trackRefresh("rates_$base")
                     val remoteResponse = currencyService.getLatestRates(base)
                     val entities = remoteResponse.rates.map { (targetCode, rate) ->
                         ExchangeRateEntity(
@@ -124,9 +129,11 @@ class RealExchangeRateRepository(
         val cachedEntities = currencyDao.getAllCurrenciesOnce()
         val cachedMap = if (cachedEntities.isNotEmpty()) {
             logger.d { "Found ${cachedEntities.size} cached currencies" }
+            metricsCollector.trackCacheHit("currencies")
             cachedEntities.associate { it.code to it.name }
         } else {
             logger.d { "No cached currencies found" }
+            metricsCollector.trackCacheMiss("currencies")
             null
         }
 
@@ -144,6 +151,7 @@ class RealExchangeRateRepository(
 
                 if (isStale) {
                     logger.d { "Currencies are stale or missing, fetching from network..." }
+                    metricsCollector.trackRefresh("currencies")
                     val remoteCurrencies = currencyService.getCurrencies()
                     val entities = remoteCurrencies.map { (code, name) ->
                         CurrencyEntity(code = code, name = name, localTimestamp = currentTimeMillis)
