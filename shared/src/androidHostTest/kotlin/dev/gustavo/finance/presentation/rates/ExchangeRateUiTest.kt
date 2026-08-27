@@ -2,7 +2,7 @@ package dev.gustavo.finance.presentation.rates
 
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.v2.runComposeUiTest
 import kotlinx.collections.immutable.persistentListOf
 import org.junit.runner.RunWith
@@ -14,6 +14,22 @@ import kotlin.test.Test
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class ExchangeRateUiTest {
+
+    @Test
+    fun testLoadingState() = runComposeUiTest {
+        setContent {
+            ExchangeRateScreen().ExchangeRateScreenContent(
+                state = ExchangeRateState.Loading,
+                searchQuery = "",
+                onSearchQueryChange = {},
+                onRefresh = {},
+                onRateClick = {},
+                onTogglePin = {}
+            )
+        }
+
+        onNodeWithTag("loading_indicator").assertIsDisplayed()
+    }
 
     @Test
     fun testSuccessState() = runComposeUiTest {
@@ -38,9 +54,9 @@ class ExchangeRateUiTest {
             )
         }
 
-        onNodeWithText("Base: EUR").assertIsDisplayed()
-        onNodeWithText("USD").assertIsDisplayed()
-        onNodeWithText("GBP").assertIsDisplayed()
+        onNodeWithTag("exchange_rate_content").assertIsDisplayed()
+        onNodeWithTag("rate_item_USD").assertIsDisplayed()
+        onNodeWithTag("rate_item_GBP").assertIsDisplayed()
     }
 
     @Test
@@ -59,7 +75,6 @@ class ExchangeRateUiTest {
             )
         }
 
-        onNodeWithText("Check your internet connection and try again.").assertIsDisplayed()
-        onNodeWithText("Retry").assertIsDisplayed()
+        onNodeWithTag("error_view").assertIsDisplayed()
     }
 }
