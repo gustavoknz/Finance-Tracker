@@ -7,5 +7,5 @@ import org.koin.dsl.module
 
 val commonModule = module {
     single { CoroutineDispatchers() }
-    single<MetricsCollector> { KermitMetricsCollector() }
+    single<MetricsCollector> { KermitMetricsCollector(get()) }
 }

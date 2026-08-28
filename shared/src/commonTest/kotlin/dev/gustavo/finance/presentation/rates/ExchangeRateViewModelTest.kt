@@ -10,6 +10,7 @@ import dev.gustavo.finance.domain.usecase.GetPinnedCurrenciesUseCase
 import dev.gustavo.finance.domain.usecase.SetBaseCurrencyUseCase
 import dev.gustavo.finance.domain.usecase.TogglePinUseCase
 import dev.gustavo.finance.domain.util.DataError
+import dev.gustavo.finance.util.FakePlatformUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -47,7 +48,7 @@ class ExchangeRateViewModelTest {
             setBaseCurrencyUseCase = SetBaseCurrencyUseCase(preferencesRepository),
             getPinnedCurrenciesUseCase = GetPinnedCurrenciesUseCase(repository),
             togglePinUseCase = TogglePinUseCase(repository),
-            displayMapper = ExchangeRateDisplayMapper(),
+            displayMapper = ExchangeRateDisplayMapper(FakePlatformUtils()),
             getBaseCurrencyUseCase = GetBaseCurrencyUseCase(preferencesRepository)
         )
     }

@@ -2,7 +2,6 @@ package dev.gustavo.finance.util
 
 import co.touchlab.kermit.Logger
 import kotlinx.atomicfu.atomic
-import dev.gustavo.finance.util.format
 
 interface MetricsCollector {
     fun trackCacheHit(source: String)
@@ -11,7 +10,9 @@ interface MetricsCollector {
     fun reportMetrics()
 }
 
-class KermitMetricsCollector : MetricsCollector {
+class KermitMetricsCollector(
+    private val platformUtils: PlatformUtils
+) : MetricsCollector {
     private val logger = Logger.withTag("Metrics")
     
     private val cacheHits = atomic(0)
@@ -46,7 +47,7 @@ class KermitMetricsCollector : MetricsCollector {
             --- Current Metrics ---
             Cache Hits: $hits
             Cache Misses: $misses
-            Cache Hit Rate: ${hitRate.format(2)}%
+            Cache Hit Rate: ${platformUtils.formatDecimal(hitRate, 2)}%
             Total Refreshes: ${refreshes.value}
             -----------------------
             """.trimIndent()

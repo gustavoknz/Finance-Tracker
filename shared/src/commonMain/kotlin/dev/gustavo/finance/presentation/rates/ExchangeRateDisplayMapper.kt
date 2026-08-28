@@ -1,11 +1,12 @@
 package dev.gustavo.finance.presentation.rates
 
 import dev.gustavo.finance.domain.model.ExchangeRatesResponse
-import dev.gustavo.finance.util.format
-import dev.gustavo.finance.util.getCurrencySymbol
+import dev.gustavo.finance.util.PlatformUtils
 import kotlinx.collections.immutable.toImmutableList
 
-class ExchangeRateDisplayMapper {
+class ExchangeRateDisplayMapper(
+    private val platformUtils: PlatformUtils
+) {
 
     companion object {
         private const val LOW_RATE_THRESHOLD = 0.1
@@ -23,9 +24,9 @@ class ExchangeRateDisplayMapper {
             ExchangeRateUiModel(
                 code = code,
                 name = currencyNames[code] ?: "",
-                symbol = getCurrencySymbol(code),
+                symbol = platformUtils.getCurrencySymbol(code),
                 rate = rate,
-                formattedRate = rate.format(decimals),
+                formattedRate = platformUtils.formatDecimal(rate, decimals),
                 isPinned = pinnedCodes.contains(code)
             )
         }
