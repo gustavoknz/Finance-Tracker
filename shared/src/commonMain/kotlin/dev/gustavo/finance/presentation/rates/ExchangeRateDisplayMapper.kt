@@ -34,7 +34,6 @@ class ExchangeRateDisplayMapper(
         val (pinned, others) = allUiRates.partition { it.isPinned }
 
         return ExchangeRateState.Success(
-            base = ratesResponse.base,
             pinnedRates = pinned.toImmutableList(),
             otherRates = others.toImmutableList(),
             lastUpdated = ratesResponse.date

@@ -16,12 +16,12 @@ import dev.gustavo.finance.domain.util.getOrNull
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
@@ -32,10 +32,16 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 @Immutable
+data class ExchangeRateUiState(
+    val base: String,
+    val searchQuery: String = "",
+    val content: ExchangeRateState = ExchangeRateState.Loading
+)
+
+@Immutable
 sealed interface ExchangeRateState {
     data object Loading : ExchangeRateState
     data class Success(
-        val base: String,
         val pinnedRates: ImmutableList<ExchangeRateUiModel>,
         val otherRates: ImmutableList<ExchangeRateUiModel>,
         val lastUpdated: String,
@@ -43,7 +49,14 @@ sealed interface ExchangeRateState {
         val syncError: DataError.Network? = null
     ) : ExchangeRateState
 
-    data class Error(val error: DataError.Network, val base: String) : ExchangeRateState
+    data class Error(val error: DataError.Network) : ExchangeRateState
+}
+
+sealed interface ExchangeRateAction {
+    data class ChangeBaseCurrency(val code: String) : ExchangeRateAction
+    data class SearchQueryChanged(val query: String) : ExchangeRateAction
+    data object Refresh : ExchangeRateAction
+    data class TogglePin(val code: String) : ExchangeRateAction
 }
 
 @Suppress("LongParameterList")
@@ -60,13 +73,12 @@ class ExchangeRateViewModel(
     private val _currentBase = MutableStateFlow(getBaseCurrencyUseCase())
     private val _refreshTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     private val _searchQuery = MutableStateFlow("")
-    val searchQuery = _searchQuery.asStateFlow()
 
     private val _uiEvents = MutableSharedFlow<ExchangeRateUiEvent>()
     val uiEvents = _uiEvents.asSharedFlow()
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val state: StateFlow<ExchangeRateState> = combine(
+    private val contentState: Flow<ExchangeRateState> = combine(
         _currentBase,
         _refreshTrigger.onStart { emit(Unit) }
     ) { base, _ -> base }
@@ -77,15 +89,15 @@ class ExchangeRateViewModel(
                 getLatestRatesUseCase(base),
                 getPinnedCurrenciesUseCase()
             ) { currenciesResult, ratesResult, pinnedCodes ->
-                mapToState(base, currenciesResult, ratesResult, pinnedCodes)
+                mapToContentState(currenciesResult, ratesResult, pinnedCodes)
             }
         }.scan(ExchangeRateState.Loading as ExchangeRateState) { previous, current ->
-            when {
-                current is ExchangeRateState.Loading && previous is ExchangeRateState.Success -> {
+            when (current) {
+                is ExchangeRateState.Loading if previous is ExchangeRateState.Success -> {
                     previous.copy(isRefreshing = true, syncError = null)
                 }
 
-                current is ExchangeRateState.Error && previous is ExchangeRateState.Success -> {
+                is ExchangeRateState.Error if previous is ExchangeRateState.Success -> {
                     // Non-blocking error: keep showing data but notify user
                     viewModelScope.launch {
                         _uiEvents.emit(ExchangeRateUiEvent.ShowOfflineNotification)
@@ -96,33 +108,37 @@ class ExchangeRateViewModel(
                 else -> current
             }
         }
-        .combine(_searchQuery) { currentState, query ->
-            if (currentState is ExchangeRateState.Success && query.isNotBlank()) {
-                currentState.copy(
-                    pinnedRates = currentState.pinnedRates.filter {
-                        it.code.contains(query, ignoreCase = true) ||
-                                it.name.contains(query, ignoreCase = true)
-                    }.toImmutableList(),
-                    otherRates = currentState.otherRates.filter {
-                        it.code.contains(query, ignoreCase = true) ||
-                                it.name.contains(query, ignoreCase = true)
-                    }.toImmutableList()
-                )
-            } else {
-                currentState
-            }
-        }
-        .catch { _ ->
-            emit(ExchangeRateState.Error(DataError.Network.UNKNOWN, _currentBase.value))
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = ExchangeRateState.Loading
-        )
 
-    private fun mapToState(
-        base: String,
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val state: StateFlow<ExchangeRateUiState> = combine(
+        _currentBase,
+        _searchQuery,
+        contentState
+    ) { base, query, content ->
+        val filteredContent = if (content is ExchangeRateState.Success && query.isNotBlank()) {
+            content.copy(
+                pinnedRates = content.pinnedRates.filter {
+                    it.code.contains(query, ignoreCase = true) ||
+                            it.name.contains(query, ignoreCase = true)
+                }.toImmutableList(),
+                otherRates = content.otherRates.filter {
+                    it.code.contains(query, ignoreCase = true) ||
+                            it.name.contains(query, ignoreCase = true)
+                }.toImmutableList()
+            )
+        } else {
+            content
+        }
+        ExchangeRateUiState(base, query, filteredContent)
+    }.catch { _ ->
+        emit(ExchangeRateUiState(_currentBase.value, _searchQuery.value, ExchangeRateState.Error(DataError.Network.UNKNOWN)))
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ExchangeRateUiState(_currentBase.value)
+    )
+
+    private fun mapToContentState(
         currenciesResult: Result<Map<String, String>, DataError.Network>,
         ratesResult: Result<ExchangeRatesResponse, DataError.Network>,
         pinnedCodes: Set<String>
@@ -139,29 +155,30 @@ class ExchangeRateViewModel(
                     successState
                 }
             }
-            currenciesResult is Result.Error -> ExchangeRateState.Error(currenciesResult.error, base)
-            ratesResult is Result.Error -> ExchangeRateState.Error(ratesResult.error, base)
+            currenciesResult is Result.Error -> ExchangeRateState.Error(currenciesResult.error)
+            ratesResult is Result.Error -> ExchangeRateState.Error(ratesResult.error)
             else -> ExchangeRateState.Loading
         }
     }
 
-    fun fetchRates(base: String) {
-        _currentBase.value = base
-    }
-
-    fun onSearchQueryChange(query: String) {
-        _searchQuery.value = query
-    }
-
-    fun refresh() {
-        viewModelScope.launch {
-            _refreshTrigger.emit(Unit)
-        }
-    }
-
-    fun togglePin(code: String) {
-        viewModelScope.launch {
-            togglePinUseCase(code)
+    fun onAction(action: ExchangeRateAction) {
+        when (action) {
+            is ExchangeRateAction.ChangeBaseCurrency -> {
+                _currentBase.value = action.code
+            }
+            is ExchangeRateAction.SearchQueryChanged -> {
+                _searchQuery.value = action.query
+            }
+            ExchangeRateAction.Refresh -> {
+                viewModelScope.launch {
+                    _refreshTrigger.emit(Unit)
+                }
+            }
+            is ExchangeRateAction.TogglePin -> {
+                viewModelScope.launch {
+                    togglePinUseCase(action.code)
+                }
+            }
         }
     }
 }

@@ -60,7 +60,7 @@ class ExchangeRateViewModelTest {
 
     @Test
     fun `initial state should be Loading`() = runTest {
-        assertEquals(ExchangeRateState.Loading, viewModel.state.value)
+        assertEquals(ExchangeRateState.Loading, viewModel.state.value.content)
     }
 
     @Test
@@ -75,16 +75,17 @@ class ExchangeRateViewModelTest {
             viewModel.state.collect {}
         }
 
-        viewModel.fetchRates("EUR")
+        viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
 
-        val state = viewModel.state.value
+        val uiState = viewModel.state.value
+        val content = uiState.content
 
-        assertTrue(state is ExchangeRateState.Success, "Expected Success state but was $state")
-        assertEquals("EUR", state.base)
-        assertEquals(1, state.otherRates.size)
-        assertEquals("USD", state.otherRates[0].code)
-        assertEquals("Dollar", state.otherRates[0].name)
-        assertFalse(state.isRefreshing)
+        assertTrue(content is ExchangeRateState.Success, "Expected Success state but was $content")
+        assertEquals("EUR", uiState.base)
+        assertEquals(1, content.otherRates.size)
+        assertEquals("USD", content.otherRates[0].code)
+        assertEquals("Dollar", content.otherRates[0].name)
+        assertFalse(content.isRefreshing)
     }
 
     @Test
@@ -95,13 +96,14 @@ class ExchangeRateViewModelTest {
             viewModel.state.collect {}
         }
 
-        viewModel.fetchRates("EUR")
+        viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
 
-        val state = viewModel.state.value
+        val uiState = viewModel.state.value
+        val content = uiState.content
 
-        assertTrue(state is ExchangeRateState.Error, "Expected Error state but was $state")
-        assertEquals(DataError.Network.UNKNOWN, state.error)
-        assertEquals("EUR", state.base)
+        assertTrue(content is ExchangeRateState.Error, "Expected Error state but was $content")
+        assertEquals(DataError.Network.UNKNOWN, content.error)
+        assertEquals("EUR", uiState.base)
     }
 
     @Test
@@ -113,12 +115,13 @@ class ExchangeRateViewModelTest {
             viewModel.state.collect {}
         }
 
-        viewModel.fetchRates("EUR")
+        viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
 
-        val state = viewModel.state.value
+        val uiState = viewModel.state.value
+        val content = uiState.content
 
-        assertTrue(state is ExchangeRateState.Error, "Expected Error state but was $state")
-        assertEquals("EUR", state.base)
+        assertTrue(content is ExchangeRateState.Error, "Expected Error state but was $content")
+        assertEquals("EUR", uiState.base)
     }
 
     @Test
@@ -131,14 +134,15 @@ class ExchangeRateViewModelTest {
             viewModel.state.collect {}
         }
 
-        viewModel.fetchRates("USD")
-        assertEquals("USD", (viewModel.state.value as ExchangeRateState.Success).base)
+        viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("USD"))
+        assertEquals("USD", viewModel.state.value.base)
+        assertTrue(viewModel.state.value.content is ExchangeRateState.Success)
 
         repository.latestRatesResult = ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08))
-        viewModel.fetchRates("EUR")
+        viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
 
-        val newState = viewModel.state.value as ExchangeRateState.Success
-        assertEquals("EUR", newState.base)
+        val newUiState = viewModel.state.value
+        assertEquals("EUR", newUiState.base)
         assertEquals("EUR", preferencesRepository.storedBaseCurrency)
     }
 
@@ -149,23 +153,26 @@ class ExchangeRateViewModelTest {
         // 1. Success
         repository.currenciesResult = mapOf("USD" to "Dollar", "EUR" to "Euro")
         repository.latestRatesResult = ExchangeRatesResponse(1.0, "USD", "2024-05-20", mapOf("EUR" to 0.92))
-        viewModel.fetchRates("USD")
+        viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("USD"))
 
-        val initialState = viewModel.state.value
-        assertTrue(initialState is ExchangeRateState.Success)
-        assertFalse(initialState.isRefreshing)
+        val initialUiState = viewModel.state.value
+        val initialContent = initialUiState.content
+        assertTrue(initialContent is ExchangeRateState.Success)
+        assertFalse(initialContent.isRefreshing)
 
         // 2. Trigger loading for DIFFERENT base to see transition
         repository.emitLoadingOnly = true
-        viewModel.fetchRates("EUR")
+        viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
 
-        val refreshingState = viewModel.state.value
+        val refreshingUiState = viewModel.state.value
+        val refreshingContent = refreshingUiState.content
         assertTrue(
-            refreshingState is ExchangeRateState.Success,
-            "Expected Success (refreshing) but was $refreshingState"
+            refreshingContent is ExchangeRateState.Success,
+            "Expected Success (refreshing) but was $refreshingContent"
         )
-        assertTrue(refreshingState.isRefreshing)
-        assertEquals("USD", refreshingState.base)
+        assertTrue(refreshingContent.isRefreshing)
+        assertEquals("USD", initialUiState.base)
+        assertEquals("EUR", refreshingUiState.base)
     }
 
     @Test
@@ -182,15 +189,16 @@ class ExchangeRateViewModelTest {
             viewModel.state.collect {}
         }
 
-        viewModel.fetchRates("EUR")
+        viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
 
         // 2. Trigger error while already having data
         repository.shouldThrow = true
-        viewModel.refresh()
+        viewModel.onAction(ExchangeRateAction.Refresh)
 
-        val state = viewModel.state.value
-        assertTrue(state is ExchangeRateState.Success)
-        assertEquals(DataError.Network.UNKNOWN, state.syncError)
+        val uiState = viewModel.state.value
+        val content = uiState.content
+        assertTrue(content is ExchangeRateState.Success)
+        assertEquals(DataError.Network.UNKNOWN, content.syncError)
         assertEquals(1, events.size)
         assertTrue(events[0] is ExchangeRateUiEvent.ShowOfflineNotification)
 
@@ -204,26 +212,26 @@ class ExchangeRateViewModelTest {
         repository.currenciesResult = mapOf("USD" to "Dollar", "EUR" to "Euro", "BRL" to "Real")
         repository.latestRatesResult =
             ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08, "BRL" to 5.5))
-        viewModel.fetchRates("EUR")
+        viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
 
-        val initialState = viewModel.state.value as ExchangeRateState.Success
-        assertEquals(2, initialState.otherRates.size)
+        val initialContent = viewModel.state.value.content as ExchangeRateState.Success
+        assertEquals(2, initialContent.otherRates.size)
 
         // Filter by code
-        viewModel.onSearchQueryChange("US")
-        val filteredByCode = viewModel.state.value as ExchangeRateState.Success
+        viewModel.onAction(ExchangeRateAction.SearchQueryChanged("US"))
+        val filteredByCode = viewModel.state.value.content as ExchangeRateState.Success
         assertEquals(1, filteredByCode.otherRates.size)
         assertEquals("USD", filteredByCode.otherRates[0].code)
 
         // Filter by name
-        viewModel.onSearchQueryChange("Real")
-        val filteredByName = viewModel.state.value as ExchangeRateState.Success
+        viewModel.onAction(ExchangeRateAction.SearchQueryChanged("Real"))
+        val filteredByName = viewModel.state.value.content as ExchangeRateState.Success
         assertEquals(1, filteredByName.otherRates.size)
         assertEquals("BRL", filteredByName.otherRates[0].code)
 
         // Clear filter
-        viewModel.onSearchQueryChange("")
-        val clearedFilter = viewModel.state.value as ExchangeRateState.Success
+        viewModel.onAction(ExchangeRateAction.SearchQueryChanged(""))
+        val clearedFilter = viewModel.state.value.content as ExchangeRateState.Success
         assertEquals(2, clearedFilter.otherRates.size)
     }
 
@@ -233,18 +241,18 @@ class ExchangeRateViewModelTest {
 
         repository.currenciesResult = mapOf("USD" to "Dollar", "EUR" to "Euro")
         repository.latestRatesResult = ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08))
-        viewModel.fetchRates("EUR")
+        viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
 
-        val initialState = viewModel.state.value as ExchangeRateState.Success
-        assertEquals(1, initialState.otherRates.size)
-        assertEquals(0, initialState.pinnedRates.size)
+        val initialContent = viewModel.state.value.content as ExchangeRateState.Success
+        assertEquals(1, initialContent.otherRates.size)
+        assertEquals(0, initialContent.pinnedRates.size)
 
-        viewModel.togglePin("USD")
+        viewModel.onAction(ExchangeRateAction.TogglePin("USD"))
 
-        val pinnedState = viewModel.state.value as ExchangeRateState.Success
-        assertEquals(0, pinnedState.otherRates.size)
-        assertEquals(1, pinnedState.pinnedRates.size)
-        assertEquals("USD", pinnedState.pinnedRates[0].code)
-        assertTrue(pinnedState.pinnedRates[0].isPinned)
+        val pinnedContent = viewModel.state.value.content as ExchangeRateState.Success
+        assertEquals(0, pinnedContent.otherRates.size)
+        assertEquals(1, pinnedContent.pinnedRates.size)
+        assertEquals("USD", pinnedContent.pinnedRates[0].code)
+        assertTrue(pinnedContent.pinnedRates[0].isPinned)
     }
 }

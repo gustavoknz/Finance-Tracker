@@ -19,12 +19,11 @@ class ExchangeRateUiTest {
     fun testLoadingState() = runComposeUiTest {
         setContent {
             ExchangeRateScreen().ExchangeRateScreenContent(
-                state = ExchangeRateState.Loading,
-                searchQuery = "",
-                onSearchQueryChange = {},
-                onRefresh = {},
-                onRateClick = {},
-                onTogglePin = {}
+                uiState = ExchangeRateUiState(
+                    base = "EUR",
+                    content = ExchangeRateState.Loading
+                ),
+                onAction = {}
             )
         }
 
@@ -40,17 +39,15 @@ class ExchangeRateUiTest {
 
         setContent {
             ExchangeRateScreen().ExchangeRateScreenContent(
-                state = ExchangeRateState.Success(
+                uiState = ExchangeRateUiState(
                     base = "EUR",
-                    pinnedRates = persistentListOf(),
-                    otherRates = rates,
-                    lastUpdated = "2024-05-20"
+                    content = ExchangeRateState.Success(
+                        pinnedRates = persistentListOf(),
+                        otherRates = rates,
+                        lastUpdated = "2024-05-20"
+                    )
                 ),
-                searchQuery = "",
-                onSearchQueryChange = {},
-                onRefresh = {},
-                onRateClick = {},
-                onTogglePin = {}
+                onAction = {}
             )
         }
 
@@ -63,15 +60,13 @@ class ExchangeRateUiTest {
     fun testErrorState() = runComposeUiTest {
         setContent {
             ExchangeRateScreen().ExchangeRateScreenContent(
-                state = ExchangeRateState.Error(
-                    error = dev.gustavo.finance.domain.util.DataError.Network.NO_INTERNET,
-                    base = "EUR"
+                uiState = ExchangeRateUiState(
+                    base = "EUR",
+                    content = ExchangeRateState.Error(
+                        error = dev.gustavo.finance.domain.util.DataError.Network.NO_INTERNET
+                    )
                 ),
-                searchQuery = "",
-                onSearchQueryChange = {},
-                onRefresh = {},
-                onRateClick = {},
-                onTogglePin = {}
+                onAction = {}
             )
         }
 

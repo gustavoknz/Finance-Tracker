@@ -88,8 +88,7 @@ class ExchangeRateScreen : Screen {
     @Composable
     override fun Content() {
         val viewModel = koinViewModel<ExchangeRateViewModel>()
-        val state by viewModel.state.collectAsStateWithLifecycle()
-        val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+        val uiState by viewModel.state.collectAsStateWithLifecycle()
         val snackbarHostState = remember { SnackbarHostState() }
         val offlineMessage = stringResource(Res.string.offline_notification)
 
@@ -107,26 +106,17 @@ class ExchangeRateScreen : Screen {
         }
 
         ExchangeRateScreenContent(
-            state = state,
-            searchQuery = searchQuery,
-            onSearchQueryChange = viewModel::onSearchQueryChange,
-            onRefresh = viewModel::refresh,
-            onRateClick = viewModel::fetchRates,
-            onTogglePin = viewModel::togglePin,
+            uiState = uiState,
+            onAction = viewModel::onAction,
             snackbarHostState = snackbarHostState
         )
     }
 
-    @Suppress("LongParameterList")
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun ExchangeRateScreenContent(
-        state: ExchangeRateState,
-        searchQuery: String,
-        onSearchQueryChange: (String) -> Unit,
-        onRefresh: () -> Unit,
-        onRateClick: (String) -> Unit,
-        onTogglePin: (String) -> Unit,
+        uiState: ExchangeRateUiState,
+        onAction: (ExchangeRateAction) -> Unit,
         snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
     ) {
         Scaffold(
@@ -144,7 +134,7 @@ class ExchangeRateScreen : Screen {
             }
         ) { padding ->
             Box(modifier = Modifier.fillMaxSize().padding(padding).testTag("exchange_rate_content")) {
-                when (state) {
+                when (val content = uiState.content) {
                     is ExchangeRateState.Loading -> {
                         CircularProgressIndicator(
                             modifier = Modifier
@@ -155,26 +145,26 @@ class ExchangeRateScreen : Screen {
 
                     is ExchangeRateState.Success -> {
                         PullToRefreshBox(
-                            isRefreshing = state.isRefreshing,
-                            onRefresh = onRefresh
+                            isRefreshing = content.isRefreshing,
+                            onRefresh = { onAction(ExchangeRateAction.Refresh) }
                         ) {
                             RateList(
-                                base = state.base,
-                                pinnedRates = state.pinnedRates,
-                                otherRates = state.otherRates,
-                                lastUpdated = state.lastUpdated,
-                                searchQuery = searchQuery,
-                                onSearchQueryChange = onSearchQueryChange,
-                                onRateClick = onRateClick,
-                                onTogglePin = onTogglePin
+                                base = uiState.base,
+                                pinnedRates = content.pinnedRates,
+                                otherRates = content.otherRates,
+                                lastUpdated = content.lastUpdated,
+                                searchQuery = uiState.searchQuery,
+                                onSearchQueryChange = { onAction(ExchangeRateAction.SearchQueryChanged(it)) },
+                                onRateClick = { onAction(ExchangeRateAction.ChangeBaseCurrency(it)) },
+                                onTogglePin = { onAction(ExchangeRateAction.TogglePin(it)) }
                             )
                         }
                     }
 
                     is ExchangeRateState.Error -> {
                         ErrorView(
-                            error = state.error,
-                            onRetry = { onRateClick(state.base) }
+                            error = content.error,
+                            onRetry = { onAction(ExchangeRateAction.ChangeBaseCurrency(uiState.base)) }
                         )
                     }
                 }
@@ -468,21 +458,20 @@ internal fun ErrorViewPreview() {
 internal fun ExchangeRateScreenPreview() {
     MaterialTheme {
         ExchangeRateScreen().ExchangeRateScreenContent(
-            state = ExchangeRateState.Success(
+            uiState = ExchangeRateUiState(
                 base = "EUR",
-                pinnedRates = persistentListOf(
-                    ExchangeRateUiModel("USD", "Dollar", "$", 1.08, "1.08", isPinned = true)
-                ),
-                otherRates = persistentListOf(
-                    ExchangeRateUiModel("GBP", "Pound", "£", 0.85, "0.85")
-                ),
-                lastUpdated = "2024-05-20"
+                searchQuery = "",
+                content = ExchangeRateState.Success(
+                    pinnedRates = persistentListOf(
+                        ExchangeRateUiModel("USD", "Dollar", "$", 1.08, "1.08", isPinned = true)
+                    ),
+                    otherRates = persistentListOf(
+                        ExchangeRateUiModel("GBP", "Pound", "£", 0.85, "0.85")
+                    ),
+                    lastUpdated = "2024-05-20"
+                )
             ),
-            searchQuery = "",
-            onSearchQueryChange = {},
-            onRefresh = {},
-            onRateClick = {},
-            onTogglePin = {}
+            onAction = {}
         )
     }
 }
