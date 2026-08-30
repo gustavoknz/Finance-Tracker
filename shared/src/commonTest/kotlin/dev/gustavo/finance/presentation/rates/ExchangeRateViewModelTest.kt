@@ -92,7 +92,7 @@ class ExchangeRateViewModelTest {
 
     @Test
     fun `error in currencies should emit Error state`() = runTest {
-        repository.shouldThrow = true
+        repository.shouldThrowCurrencies = true
 
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.state.collect {}
@@ -113,7 +113,7 @@ class ExchangeRateViewModelTest {
     @Test
     fun `error in rates should emit Error state`() = runTest {
         repository.currenciesResult = mapOf("USD" to "Dollar")
-        repository.shouldThrow = true
+        repository.shouldThrowRates = true
 
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.state.collect {}
@@ -203,7 +203,7 @@ class ExchangeRateViewModelTest {
         testScheduler.advanceTimeBy(400)
 
         // 2. Trigger error while already having data
-        repository.shouldThrow = true
+        repository.shouldThrowRates = true
         viewModel.onAction(ExchangeRateAction.Refresh)
         testScheduler.advanceTimeBy(400)
 
@@ -272,5 +272,49 @@ class ExchangeRateViewModelTest {
         assertEquals(1, pinnedContent.pinnedRates.size)
         assertEquals("USD", pinnedContent.pinnedRates[0].code)
         assertTrue(pinnedContent.pinnedRates[0].isPinned)
+    }
+
+    @Test
+    fun `mapToContentState should return isRefreshing when results are loading but have data`() = runTest {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.state.collect {} }
+
+        repository.currenciesResult = mapOf("USD" to "Dollar")
+        repository.latestRatesResult = ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08))
+        
+        repository.emitLoadingWithData = true
+        repository.emitLoadingOnly = true
+        viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
+        testScheduler.advanceTimeBy(400)
+
+        val content = viewModel.state.value.content
+        assertTrue(content is ExchangeRateState.Success, "Expected Success state but was $content")
+        assertTrue(content.isRefreshing)
+    }
+
+    @Test
+    fun `catch block should emit generic error state`() = runTest {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.state.collect {} }
+
+        repository.forceException = true
+        viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
+        testScheduler.advanceTimeBy(400)
+
+        val content = viewModel.state.value.content
+        assertTrue(content is ExchangeRateState.Error)
+        assertEquals(DataError.Network.UNKNOWN, content.error)
+    }
+
+    @Test
+    fun `mapToContentState should return Loading if data is partially missing`() = runTest {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.state.collect {} }
+
+        repository.currenciesResult = emptyMap()
+        repository.latestRatesResult = null
+        repository.emitLoadingOnly = true // Stay in loading
+        
+        viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
+        testScheduler.advanceTimeBy(400)
+
+        assertEquals(ExchangeRateState.Loading, viewModel.state.value.content)
     }
 }

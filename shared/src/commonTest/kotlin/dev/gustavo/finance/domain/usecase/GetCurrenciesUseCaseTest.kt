@@ -34,7 +34,7 @@ class GetCurrenciesUseCaseTest {
 
     @Test
     fun `invoke should return error when repository fails`() = runTest {
-        repository.shouldThrow = true
+        repository.shouldThrowCurrencies = true
 
         val results = getCurrenciesUseCase().toList()
 

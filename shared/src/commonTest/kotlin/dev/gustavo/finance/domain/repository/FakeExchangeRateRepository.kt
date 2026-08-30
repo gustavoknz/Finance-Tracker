@@ -11,16 +11,26 @@ import kotlinx.coroutines.flow.flow
 class FakeExchangeRateRepository : ExchangeRateRepository {
     var currenciesResult: Map<String, String> = emptyMap()
     var latestRatesResult: ExchangeRatesResponse? = null
-    var shouldThrow: Boolean = false
+    var shouldThrowRates: Boolean = false
+    var shouldThrowCurrencies: Boolean = false
+    var forceException: Boolean = false
+    var emitLoadingWithData: Boolean = false
     var emitLoadingOnly: Boolean = false
 
     private val _pinnedCurrencies = MutableStateFlow<Set<String>>(emptySet())
 
     override fun getLatestRates(base: String): Flow<Result<ExchangeRatesResponse, DataError.Network>> = flow {
-        emit(Result.Loading())
+        if (forceException) throw RuntimeException("Fatal Error")
+        
+        if (emitLoadingWithData) {
+            emit(Result.Loading(latestRatesResult))
+        } else {
+            emit(Result.Loading())
+        }
+
         if (emitLoadingOnly) return@flow
 
-        if (shouldThrow) {
+        if (shouldThrowRates) {
             emit(Result.Error(DataError.Network.UNKNOWN))
         } else {
             latestRatesResult?.let { emit(Result.Success(it)) } ?: emit(Result.Error(DataError.Network.UNKNOWN))
@@ -28,10 +38,15 @@ class FakeExchangeRateRepository : ExchangeRateRepository {
     }
 
     override fun getCurrencies(): Flow<Result<Map<String, String>, DataError.Network>> = flow {
-        emit(Result.Loading())
+        if (emitLoadingWithData) {
+            emit(Result.Loading(currenciesResult))
+        } else {
+            emit(Result.Loading())
+        }
+
         if (emitLoadingOnly) return@flow
 
-        if (shouldThrow) {
+        if (shouldThrowCurrencies) {
             emit(Result.Error(DataError.Network.UNKNOWN))
         } else {
             emit(Result.Success(currenciesResult))

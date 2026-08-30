@@ -40,7 +40,7 @@ class GetLatestRatesUseCaseTest {
 
     @Test
     fun `invoke should return error when repository fails`() = runTest {
-        repository.shouldThrow = true
+        repository.shouldThrowRates = true
 
         val results = getLatestRatesUseCase("EUR").toList()
 
