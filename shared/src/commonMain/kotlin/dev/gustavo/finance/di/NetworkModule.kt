@@ -2,6 +2,7 @@ package dev.gustavo.finance.di
 
 import dev.gustavo.finance.data.remote.CurrencyService
 import dev.gustavo.finance.data.remote.KtorCurrencyService
+import dev.gustavo.finance.util.AppConfig
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpTimeout
@@ -23,9 +24,10 @@ import co.touchlab.kermit.Logger as KermitLogger
 
 val networkModule = module {
     single {
+        val config = get<AppConfig>()
         HttpClient {
             defaultRequest {
-                url("https://api.frankfurter.dev/v1/")
+                url(config.baseUrl)
                 contentType(ContentType.Application.Json)
             }
             install(ContentNegotiation) {
