@@ -18,6 +18,8 @@ import dev.gustavo.finance.domain.util.getOrNull
 import dev.gustavo.finance.util.CoroutineDispatchers
 import dev.gustavo.finance.util.MetricsCollector
 import co.touchlab.kermit.Logger
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -39,14 +41,35 @@ class RealExchangeRateRepository(
 ) : ExchangeRateRepository {
 
     private val logger = Logger.withTag("ExchangeRateRepository")
+    private val repositoryScope = CoroutineScope(SupervisorJob() + dispatchers.io)
 
     companion object {
         private const val CURRENCIES_TTL = 24 * 60 * 60 * 1000L // 24 hours
         private const val RATES_TTL = 30 * 60 * 1000L // 30 minutes
+        private const val CLEANUP_THRESHOLD = 7 * 24 * 60 * 60 * 1000L // 7 days
+    }
+
+    init {
+        cleanupOldData()
+    }
+
+    private fun cleanupOldData() {
+        repositoryScope.launch {
+            try {
+                logger.d { "Running periodic cache cleanup..." }
+                val cleanupTime = Clock.System.now().toEpochMilliseconds() - CLEANUP_THRESHOLD
+                exchangeRateDao.deleteOldRates(cleanupTime)
+                currencyDao.deleteOldCurrencies(cleanupTime)
+                logger.d { "Cache cleanup completed." }
+            } catch (e: Exception) {
+                logger.e(e) { "Failed to cleanup old cache" }
+            }
+        }
     }
 
     override fun getLatestRates(base: String): Flow<Result<ExchangeRatesResponse, DataError.Network>> = channelFlow {
         logger.d { "getLatestRates(base=$base)" }
+        
         val cachedEntities = exchangeRateDao.getRatesByBaseOnce(base)
         val cachedResponse = if (cachedEntities.isNotEmpty()) {
             logger.d { "Found ${cachedEntities.size} cached rates for $base" }

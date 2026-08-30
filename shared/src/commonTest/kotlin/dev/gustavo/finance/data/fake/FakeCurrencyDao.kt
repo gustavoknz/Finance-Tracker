@@ -15,4 +15,8 @@ class FakeCurrencyDao : CurrencyDao {
     override suspend fun insertCurrencies(currencies: List<CurrencyEntity>) {
         currenciesFlow.value = currencies
     }
+
+    override suspend fun deleteOldCurrencies(timestamp: Long) {
+        currenciesFlow.value = currenciesFlow.value.filter { it.localTimestamp >= timestamp }
+    }
 }

@@ -154,6 +154,7 @@ class ExchangeRateScreen : Screen {
                                 otherRates = content.otherRates,
                                 lastUpdated = content.lastUpdated,
                                 searchQuery = uiState.searchQuery,
+                                isOffline = content.syncError != null,
                                 onSearchQueryChange = { onAction(ExchangeRateAction.SearchQueryChanged(it)) },
                                 onRateClick = { onAction(ExchangeRateAction.ChangeBaseCurrency(it)) },
                                 onTogglePin = { onAction(ExchangeRateAction.TogglePin(it)) }
@@ -214,6 +215,7 @@ class ExchangeRateScreen : Screen {
         otherRates: ImmutableList<ExchangeRateUiModel>,
         lastUpdated: String,
         searchQuery: String,
+        isOffline: Boolean,
         onSearchQueryChange: (String) -> Unit,
         onRateClick: (String) -> Unit,
         onTogglePin: (String) -> Unit
@@ -232,10 +234,20 @@ class ExchangeRateScreen : Screen {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = stringResource(Res.string.base_currency_label, base),
-                    style = MaterialTheme.typography.headlineSmall
-                )
+                Column {
+                    Text(
+                        text = stringResource(Res.string.base_currency_label, base),
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                    if (isOffline) {
+                        Text(
+                            text = stringResource(Res.string.offline_notification),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
                 Text(
                     text = stringResource(Res.string.last_updated_label, lastUpdated),
                     style = MaterialTheme.typography.labelSmall,

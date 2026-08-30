@@ -16,4 +16,7 @@ interface ExchangeRateDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRates(rates: List<ExchangeRateEntity>)
+
+    @Query("DELETE FROM ExchangeRateEntity WHERE localTimestamp < :timestamp")
+    suspend fun deleteOldRates(timestamp: Long)
 }

@@ -16,4 +16,7 @@ interface CurrencyDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCurrencies(currencies: List<CurrencyEntity>)
+
+    @Query("DELETE FROM CurrencyEntity WHERE localTimestamp < :timestamp")
+    suspend fun deleteOldCurrencies(timestamp: Long)
 }

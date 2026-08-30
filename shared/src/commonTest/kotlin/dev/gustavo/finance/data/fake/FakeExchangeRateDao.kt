@@ -26,4 +26,8 @@ class FakeExchangeRateDao : ExchangeRateDao {
         }
         ratesFlow.value = current
     }
+
+    override suspend fun deleteOldRates(timestamp: Long) {
+        ratesFlow.value = ratesFlow.value.filter { it.localTimestamp >= timestamp }
+    }
 }
