@@ -119,6 +119,32 @@ class DataErrorMapperTest {
     }
 
     @Test
+    fun `Boundary 499 status should map to CLIENT_ERROR`() = runTest {
+        val client = HttpClient(MockEngine {
+            respond("", HttpStatusCode(499, "Unknown Client Error"))
+        }) {
+            expectSuccess = true
+        }
+        val exception = assertFailsWith<ClientRequestException> {
+            client.get("https://test.com")
+        }
+        assertEquals(DataError.Network.CLIENT_ERROR, exception.toDataError())
+    }
+
+    @Test
+    fun `Boundary 599 status should map to SERVER_ERROR`() = runTest {
+        val client = HttpClient(MockEngine {
+            respond("", HttpStatusCode(599, "Unknown Server Error"))
+        }) {
+            expectSuccess = true
+        }
+        val exception = assertFailsWith<ServerResponseException> {
+            client.get("https://test.com")
+        }
+        assertEquals(DataError.Network.SERVER_ERROR, exception.toDataError())
+    }
+
+    @Test
     fun `Unknown exception should map to UNKNOWN`() {
         val exception = Exception("Random error")
         assertEquals(DataError.Network.UNKNOWN, exception.toDataError())
