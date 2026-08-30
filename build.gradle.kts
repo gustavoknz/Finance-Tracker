@@ -45,7 +45,12 @@ tasks.withType<Detekt>().configureEach {
     configureReports()
 }
 
-val koverExcludedClasses = listOf("*.MainActivity", "dev.gustavo.finance.AppKt")
+val koverExcludedClasses = listOf(
+    "*.MainActivity",
+    "dev.gustavo.finance.AppKt",
+    "dev.gustavo.finance.FinanceApp",
+    "*.ComposableSingletons*"
+)
 val koverExcludedPackages = listOf(
     "dev.gustavo.finance.di",
     "dev.gustavo.finance.di.*",
