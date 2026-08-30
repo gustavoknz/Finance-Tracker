@@ -49,7 +49,8 @@ val koverExcludedClasses = listOf(
     "*.MainActivity",
     "dev.gustavo.finance.AppKt",
     "dev.gustavo.finance.FinanceApp",
-    "*.ComposableSingletons*"
+    "*.ComposableSingletons*",
+    "*.ExchangeRateScreenKt"
 )
 val koverExcludedPackages = listOf(
     "dev.gustavo.finance.di",
