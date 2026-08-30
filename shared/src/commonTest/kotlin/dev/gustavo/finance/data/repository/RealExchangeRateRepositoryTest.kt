@@ -10,7 +10,6 @@ import dev.gustavo.finance.domain.model.ExchangeRatesResponse
 import dev.gustavo.finance.domain.util.Result
 import dev.gustavo.finance.util.CoroutineDispatchers
 import dev.gustavo.finance.util.FakeMetricsCollector
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -20,7 +19,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class RealExchangeRateRepositoryTest {
 
     private lateinit var service: FakeCurrencyService

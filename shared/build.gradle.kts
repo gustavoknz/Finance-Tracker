@@ -14,7 +14,15 @@ plugins {
 
 kotlin {
     compilerOptions {
-        freeCompilerArgs.add("-Xexpect-actual-classes")
+        freeCompilerArgs.addAll(
+            "-Xexpect-actual-classes",
+            "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
+            "-opt-in=kotlinx.coroutines.FlowPreview",
+            "-opt-in=org.koin.core.annotation.KoinExperimentalAPI",
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+            "-opt-in=kotlinx.cinterop.ExperimentalForeignApi",
+            "-opt-in=androidx.compose.ui.test.ExperimentalTestApi"
+        )
     }
     applyDefaultHierarchyTemplate()
     listOf(

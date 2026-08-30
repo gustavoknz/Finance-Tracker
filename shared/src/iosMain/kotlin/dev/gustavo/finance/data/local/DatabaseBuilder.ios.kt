@@ -2,14 +2,12 @@ package dev.gustavo.finance.data.local
 
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSHomeDirectory
 import platform.Foundation.NSURL
 import platform.Foundation.NSUserDomainMask
 
-@OptIn(ExperimentalForeignApi::class)
 fun getIosDatabaseBuilder(): RoomDatabase.Builder<AppDatabase> {
     val documentDirectory = NSFileManager.defaultManager.URLsForDirectory(
         directory = NSDocumentDirectory,

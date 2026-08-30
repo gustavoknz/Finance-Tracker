@@ -16,8 +16,6 @@ import dev.gustavo.finance.domain.util.getOrNull
 import dev.gustavo.finance.util.CoroutineDispatchers
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -84,7 +82,6 @@ class ExchangeRateViewModel(
     private val _uiEvents = MutableSharedFlow<ExchangeRateUiEvent>()
     val uiEvents = _uiEvents.asSharedFlow()
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     private val contentState: Flow<ExchangeRateState> = combine(
         _currentBase,
         _refreshTrigger.onStart { emit(Unit) }
@@ -119,7 +116,6 @@ class ExchangeRateViewModel(
         }
         .distinctUntilChanged()
 
-    @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     val state: StateFlow<ExchangeRateUiState> = combine(
         _currentBase,
         _searchQuery.debounce(300.milliseconds).distinctUntilChanged(),

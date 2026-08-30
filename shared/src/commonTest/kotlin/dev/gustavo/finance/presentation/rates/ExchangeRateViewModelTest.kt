@@ -13,7 +13,6 @@ import dev.gustavo.finance.domain.util.DataError
 import dev.gustavo.finance.util.CoroutineDispatchers
 import dev.gustavo.finance.util.FakePlatformUtils
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -26,7 +25,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class ExchangeRateViewModelTest {
 
     private lateinit var viewModel: ExchangeRateViewModel

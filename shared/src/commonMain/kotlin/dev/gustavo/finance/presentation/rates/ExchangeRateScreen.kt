@@ -21,7 +21,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -79,12 +78,10 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
-import org.koin.core.annotation.KoinExperimentalAPI
 import kotlin.time.Duration.Companion.milliseconds
 
 class ExchangeRateScreen : Screen {
 
-    @OptIn(KoinExperimentalAPI::class, ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val viewModel = koinViewModel<ExchangeRateViewModel>()
@@ -112,7 +109,6 @@ class ExchangeRateScreen : Screen {
         )
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun ExchangeRateScreenContent(
         uiState: ExchangeRateUiState,
@@ -359,7 +355,6 @@ class ExchangeRateScreen : Screen {
     }
 
     @Suppress("LongMethod")
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     internal fun RateItem(
         uiModel: ExchangeRateUiModel,
