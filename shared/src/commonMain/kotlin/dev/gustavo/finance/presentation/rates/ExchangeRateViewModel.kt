@@ -13,9 +13,11 @@ import dev.gustavo.finance.domain.usecase.TogglePinUseCase
 import dev.gustavo.finance.domain.util.DataError
 import dev.gustavo.finance.domain.util.Result
 import dev.gustavo.finance.domain.util.getOrNull
+import dev.gustavo.finance.util.CoroutineDispatchers
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,12 +26,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlin.time.Duration.Companion.milliseconds
 
 @Immutable
 data class ExchangeRateUiState(
@@ -67,6 +73,7 @@ class ExchangeRateViewModel(
     private val getPinnedCurrenciesUseCase: GetPinnedCurrenciesUseCase,
     private val togglePinUseCase: TogglePinUseCase,
     private val displayMapper: ExchangeRateDisplayMapper,
+    private val dispatchers: CoroutineDispatchers,
     getBaseCurrencyUseCase: GetBaseCurrencyUseCase
 ) : ViewModel() {
 
@@ -89,7 +96,9 @@ class ExchangeRateViewModel(
                 getLatestRatesUseCase(base),
                 getPinnedCurrenciesUseCase()
             ) { currenciesResult, ratesResult, pinnedCodes ->
-                mapToContentState(currenciesResult, ratesResult, pinnedCodes)
+                withContext(dispatchers.default) {
+                    mapToContentState(currenciesResult, ratesResult, pinnedCodes)
+                }
             }
         }.scan(ExchangeRateState.Loading as ExchangeRateState) { previous, current ->
             when (current) {
@@ -108,30 +117,39 @@ class ExchangeRateViewModel(
                 else -> current
             }
         }
+        .distinctUntilChanged()
 
-    @OptIn(ExperimentalCoroutinesApi::class)
+    @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     val state: StateFlow<ExchangeRateUiState> = combine(
         _currentBase,
-        _searchQuery,
+        _searchQuery.debounce(300.milliseconds).distinctUntilChanged(),
         contentState
     ) { base, query, content ->
         val filteredContent = if (content is ExchangeRateState.Success && query.isNotBlank()) {
-            content.copy(
-                pinnedRates = content.pinnedRates.filter {
-                    it.code.contains(query, ignoreCase = true) ||
-                            it.name.contains(query, ignoreCase = true)
-                }.toImmutableList(),
-                otherRates = content.otherRates.filter {
-                    it.code.contains(query, ignoreCase = true) ||
-                            it.name.contains(query, ignoreCase = true)
-                }.toImmutableList()
-            )
+            withContext(dispatchers.default) {
+                content.copy(
+                    pinnedRates = content.pinnedRates.filter {
+                        it.code.contains(query, ignoreCase = true) ||
+                                it.name.contains(query, ignoreCase = true)
+                    }.toImmutableList(),
+                    otherRates = content.otherRates.filter {
+                        it.code.contains(query, ignoreCase = true) ||
+                                it.name.contains(query, ignoreCase = true)
+                    }.toImmutableList()
+                )
+            }
         } else {
             content
         }
         ExchangeRateUiState(base, query, filteredContent)
     }.catch { _ ->
-        emit(ExchangeRateUiState(_currentBase.value, _searchQuery.value, ExchangeRateState.Error(DataError.Network.UNKNOWN)))
+        emit(
+            ExchangeRateUiState(
+                _currentBase.value,
+                _searchQuery.value,
+                ExchangeRateState.Error(DataError.Network.UNKNOWN)
+            )
+        )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -155,6 +173,7 @@ class ExchangeRateViewModel(
                     successState
                 }
             }
+
             currenciesResult is Result.Error -> ExchangeRateState.Error(currenciesResult.error)
             ratesResult is Result.Error -> ExchangeRateState.Error(ratesResult.error)
             else -> ExchangeRateState.Loading
@@ -166,14 +185,17 @@ class ExchangeRateViewModel(
             is ExchangeRateAction.ChangeBaseCurrency -> {
                 _currentBase.value = action.code
             }
+
             is ExchangeRateAction.SearchQueryChanged -> {
                 _searchQuery.value = action.query
             }
+
             ExchangeRateAction.Refresh -> {
                 viewModelScope.launch {
                     _refreshTrigger.emit(Unit)
                 }
             }
+
             is ExchangeRateAction.TogglePin -> {
                 viewModelScope.launch {
                     togglePinUseCase(action.code)

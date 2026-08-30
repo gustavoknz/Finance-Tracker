@@ -10,6 +10,7 @@ import dev.gustavo.finance.domain.usecase.GetPinnedCurrenciesUseCase
 import dev.gustavo.finance.domain.usecase.SetBaseCurrencyUseCase
 import dev.gustavo.finance.domain.usecase.TogglePinUseCase
 import dev.gustavo.finance.domain.util.DataError
+import dev.gustavo.finance.util.CoroutineDispatchers
 import dev.gustavo.finance.util.FakePlatformUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -49,6 +50,7 @@ class ExchangeRateViewModelTest {
             getPinnedCurrenciesUseCase = GetPinnedCurrenciesUseCase(repository),
             togglePinUseCase = TogglePinUseCase(repository),
             displayMapper = ExchangeRateDisplayMapper(FakePlatformUtils()),
+            dispatchers = CoroutineDispatchers(testDispatcher, testDispatcher, testDispatcher),
             getBaseCurrencyUseCase = GetBaseCurrencyUseCase(preferencesRepository)
         )
     }
@@ -77,6 +79,8 @@ class ExchangeRateViewModelTest {
 
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
 
+        testScheduler.advanceTimeBy(400) // Trigger debounce
+
         val uiState = viewModel.state.value
         val content = uiState.content
 
@@ -98,6 +102,8 @@ class ExchangeRateViewModelTest {
 
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
 
+        testScheduler.advanceTimeBy(400) // Trigger debounce
+
         val uiState = viewModel.state.value
         val content = uiState.content
 
@@ -117,6 +123,8 @@ class ExchangeRateViewModelTest {
 
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
 
+        testScheduler.advanceTimeBy(400) // Trigger debounce
+
         val uiState = viewModel.state.value
         val content = uiState.content
 
@@ -135,11 +143,13 @@ class ExchangeRateViewModelTest {
         }
 
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("USD"))
+        testScheduler.advanceTimeBy(400)
         assertEquals("USD", viewModel.state.value.base)
         assertTrue(viewModel.state.value.content is ExchangeRateState.Success)
 
         repository.latestRatesResult = ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08))
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
+        testScheduler.advanceTimeBy(400)
 
         val newUiState = viewModel.state.value
         assertEquals("EUR", newUiState.base)
@@ -154,6 +164,7 @@ class ExchangeRateViewModelTest {
         repository.currenciesResult = mapOf("USD" to "Dollar", "EUR" to "Euro")
         repository.latestRatesResult = ExchangeRatesResponse(1.0, "USD", "2024-05-20", mapOf("EUR" to 0.92))
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("USD"))
+        testScheduler.advanceTimeBy(400)
 
         val initialUiState = viewModel.state.value
         val initialContent = initialUiState.content
@@ -163,6 +174,7 @@ class ExchangeRateViewModelTest {
         // 2. Trigger loading for DIFFERENT base to see transition
         repository.emitLoadingOnly = true
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
+        testScheduler.advanceTimeBy(400)
 
         val refreshingUiState = viewModel.state.value
         val refreshingContent = refreshingUiState.content
@@ -190,10 +202,12 @@ class ExchangeRateViewModelTest {
         }
 
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
+        testScheduler.advanceTimeBy(400)
 
         // 2. Trigger error while already having data
         repository.shouldThrow = true
         viewModel.onAction(ExchangeRateAction.Refresh)
+        testScheduler.advanceTimeBy(400)
 
         val uiState = viewModel.state.value
         val content = uiState.content
@@ -213,24 +227,28 @@ class ExchangeRateViewModelTest {
         repository.latestRatesResult =
             ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08, "BRL" to 5.5))
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
+        testScheduler.advanceTimeBy(400)
 
         val initialContent = viewModel.state.value.content as ExchangeRateState.Success
         assertEquals(2, initialContent.otherRates.size)
 
         // Filter by code
         viewModel.onAction(ExchangeRateAction.SearchQueryChanged("US"))
+        testScheduler.advanceTimeBy(400)
         val filteredByCode = viewModel.state.value.content as ExchangeRateState.Success
         assertEquals(1, filteredByCode.otherRates.size)
         assertEquals("USD", filteredByCode.otherRates[0].code)
 
         // Filter by name
         viewModel.onAction(ExchangeRateAction.SearchQueryChanged("Real"))
+        testScheduler.advanceTimeBy(400)
         val filteredByName = viewModel.state.value.content as ExchangeRateState.Success
         assertEquals(1, filteredByName.otherRates.size)
         assertEquals("BRL", filteredByName.otherRates[0].code)
 
         // Clear filter
         viewModel.onAction(ExchangeRateAction.SearchQueryChanged(""))
+        testScheduler.advanceTimeBy(400)
         val clearedFilter = viewModel.state.value.content as ExchangeRateState.Success
         assertEquals(2, clearedFilter.otherRates.size)
     }
@@ -242,12 +260,14 @@ class ExchangeRateViewModelTest {
         repository.currenciesResult = mapOf("USD" to "Dollar", "EUR" to "Euro")
         repository.latestRatesResult = ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08))
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
+        testScheduler.advanceTimeBy(400)
 
         val initialContent = viewModel.state.value.content as ExchangeRateState.Success
         assertEquals(1, initialContent.otherRates.size)
         assertEquals(0, initialContent.pinnedRates.size)
 
         viewModel.onAction(ExchangeRateAction.TogglePin("USD"))
+        testScheduler.advanceTimeBy(400)
 
         val pinnedContent = viewModel.state.value.content as ExchangeRateState.Success
         assertEquals(0, pinnedContent.otherRates.size)
