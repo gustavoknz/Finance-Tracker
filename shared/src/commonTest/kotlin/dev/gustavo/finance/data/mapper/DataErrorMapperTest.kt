@@ -1,9 +1,21 @@
 package dev.gustavo.finance.data.mapper
 
 import dev.gustavo.finance.domain.util.DataError
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ResponseException
+import io.ktor.client.plugins.ServerResponseException
+import io.ktor.client.request.get
+import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.test.runTest
 import kotlinx.io.IOException
+import kotlinx.serialization.SerializationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class DataErrorMapperTest {
 
@@ -14,12 +26,61 @@ class DataErrorMapperTest {
     }
 
     @Test
+    fun `SerializationException should map to SERVER_ERROR`() {
+        val exception = SerializationException("JSON error")
+        assertEquals(DataError.Network.SERVER_ERROR, exception.toDataError())
+    }
+
+    @Test
+    fun `CancellationException should be rethrown`() {
+        val exception = CancellationException("Cancelled")
+        assertFailsWith<CancellationException> {
+            exception.toDataError()
+        }
+    }
+
+    @Test
+    fun `ClientRequestException should map to CLIENT_ERROR`() = runTest {
+        val client = HttpClient(MockEngine {
+            respond("", HttpStatusCode.BadRequest)
+        }) {
+            expectSuccess = true
+        }
+        val exception = assertFailsWith<ClientRequestException> {
+            client.get("https://test.com")
+        }
+        assertEquals(DataError.Network.CLIENT_ERROR, exception.toDataError())
+    }
+
+    @Test
+    fun `ServerResponseException should map to SERVER_ERROR`() = runTest {
+        val client = HttpClient(MockEngine {
+            respond("", HttpStatusCode.InternalServerError)
+        }) {
+            expectSuccess = true
+        }
+        val exception = assertFailsWith<ServerResponseException> {
+            client.get("https://test.com")
+        }
+        assertEquals(DataError.Network.SERVER_ERROR, exception.toDataError())
+    }
+
+    @Test
+    fun `ServiceUnavailable should map to SERVICE_UNAVAILABLE`() = runTest {
+        val client = HttpClient(MockEngine {
+            respond("", HttpStatusCode.ServiceUnavailable)
+        }) {
+            expectSuccess = true
+        }
+        val exception = assertFailsWith<ResponseException> {
+            client.get("https://test.com")
+        }
+        assertEquals(DataError.Network.SERVICE_UNAVAILABLE, exception.toDataError())
+    }
+
+    @Test
     fun `Unknown exception should map to UNKNOWN`() {
         val exception = Exception("Random error")
         assertEquals(DataError.Network.UNKNOWN, exception.toDataError())
     }
-
-    // Note: Testing ResponseException subtypes like ClientRequestException 
-    // requires a mock HttpResponse which is hard to create manually in KMP without MockK.
-    // We'll focus on the branches we can easily trigger or add more if we add a mocking library.
 }
