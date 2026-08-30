@@ -70,23 +70,28 @@ class RealExchangeRateRepository(
     override fun getLatestRates(base: String): Flow<Result<ExchangeRatesResponse, DataError.Network>> = channelFlow {
         logger.d { "getLatestRates(base=$base)" }
         
-        val cachedEntities = exchangeRateDao.getRatesByBaseOnce(base)
-        val cachedResponse = if (cachedEntities.isNotEmpty()) {
-            logger.d { "Found ${cachedEntities.size} cached rates for $base" }
-            metricsCollector.trackCacheHit("rates_$base")
-            ExchangeRatesResponse(
-                amount = 1.0,
-                base = base,
-                date = cachedEntities.first().date,
-                rates = cachedEntities.associate { it.targetCode to it.rate }
-            )
-        } else {
-            logger.d { "No cached rates found for $base" }
-            metricsCollector.trackCacheMiss("rates_$base")
-            null
-        }
+        try {
+            val cachedEntities = exchangeRateDao.getRatesByBaseOnce(base)
+            val cachedResponse = if (cachedEntities.isNotEmpty()) {
+                logger.d { "Found ${cachedEntities.size} cached rates for $base" }
+                metricsCollector.trackCacheHit("rates_$base")
+                ExchangeRatesResponse(
+                    amount = 1.0,
+                    base = base,
+                    date = cachedEntities.first().date,
+                    rates = cachedEntities.associate { it.targetCode to it.rate }
+                )
+            } else {
+                logger.d { "No cached rates found for $base" }
+                metricsCollector.trackCacheMiss("rates_$base")
+                null
+            }
 
-        send(Result.Loading(cachedResponse))
+            send(Result.Loading(cachedResponse))
+        } catch (e: Throwable) {
+            send(Result.Loading(null))
+            send(Result.Error(e.toDataError()))
+        }
 
         launch(dispatchers.io) {
             try {
@@ -149,18 +154,24 @@ class RealExchangeRateRepository(
 
     override fun getCurrencies(): Flow<Result<Map<String, String>, DataError.Network>> = channelFlow {
         logger.d { "getCurrencies()" }
-        val cachedEntities = currencyDao.getAllCurrenciesOnce()
-        val cachedMap = if (cachedEntities.isNotEmpty()) {
-            logger.d { "Found ${cachedEntities.size} cached currencies" }
-            metricsCollector.trackCacheHit("currencies")
-            cachedEntities.associate { it.code to it.name }
-        } else {
-            logger.d { "No cached currencies found" }
-            metricsCollector.trackCacheMiss("currencies")
-            null
-        }
+        
+        try {
+            val cachedEntities = currencyDao.getAllCurrenciesOnce()
+            val cachedMap = if (cachedEntities.isNotEmpty()) {
+                logger.d { "Found ${cachedEntities.size} cached currencies" }
+                metricsCollector.trackCacheHit("currencies")
+                cachedEntities.associate { it.code to it.name }
+            } else {
+                logger.d { "No cached currencies found" }
+                metricsCollector.trackCacheMiss("currencies")
+                null
+            }
 
-        send(Result.Loading(cachedMap))
+            send(Result.Loading(cachedMap))
+        } catch (e: Throwable) {
+            send(Result.Loading(null))
+            send(Result.Error(e.toDataError()))
+        }
 
         launch(dispatchers.io) {
             try {

@@ -208,4 +208,121 @@ class RealExchangeRateRepositoryTest {
         repository.getLatestRates(base).take(1).toList()
         assertEquals(1, metricsCollector.cacheHitCount)
     }
+
+    @Test
+    fun `getLatestRates should handle DB flow error gracefully`() = runTest {
+        val base = "USD"
+        exchangeRateDao.shouldThrow = true
+
+        val results = repository.getLatestRates(base).take(2).toList()
+
+        assertTrue(results[1] is Result.Error)
+    }
+
+    @Test
+    fun `getCurrencies should handle DB flow error gracefully`() = runTest {
+        currencyDao.shouldThrow = true
+
+        val results = repository.getCurrencies().take(2).toList()
+
+        assertTrue(results[1] is Result.Error)
+    }
+
+    @Test
+    fun `getPinnedCurrencies should return set of pinned codes`() = runTest {
+        pinDao.insertPin(dev.gustavo.finance.data.local.PinEntity("USD"))
+        pinDao.insertPin(dev.gustavo.finance.data.local.PinEntity("EUR"))
+
+        val pinned = repository.getPinnedCurrencies().take(1).toList().first()
+
+        assertEquals(setOf("USD", "EUR"), pinned)
+    }
+
+    @Test
+    fun `togglePin should add pin if not present`() = runTest {
+        val code = "USD"
+        repository.togglePin(code)
+        assertTrue(pinDao.isPinned(code))
+    }
+
+    @Test
+    fun `togglePin should remove pin if already present`() = runTest {
+        val code = "USD"
+        pinDao.insertPin(dev.gustavo.finance.data.local.PinEntity(code))
+        repository.togglePin(code)
+        assertTrue(!pinDao.isPinned(code))
+    }
+
+    @Test
+    fun `cleanupOldData should handle errors gracefully`() = runTest {
+        exchangeRateDao.shouldThrow = true
+        // Just create a new repository to trigger init block with error
+        RealExchangeRateRepository(service, currencyDao, exchangeRateDao, metadataDao, pinDao, dispatchers, metricsCollector)
+        // If it doesn't crash, it's handled (verified by logs in real app)
+    }
+
+    @Test
+    fun `getLatestRates should handle background refresh error gracefully`() = runTest {
+        val base = "USD"
+        metadataDao.shouldThrow = true // Trigger error in launch block
+
+        val results = repository.getLatestRates(base).take(2).toList()
+        
+        // Should still show loading (and potentially error from send if caught)
+        // The background error sends Result.Error
+        assertTrue(results.any { it is Result.Error })
+    }
+
+    @Test
+    fun `getCurrencies should handle background refresh error gracefully`() = runTest {
+        metadataDao.shouldThrow = true
+
+        val results = repository.getCurrencies().take(2).toList()
+        assertTrue(results.any { it is Result.Error })
+    }
+
+    @Test
+    fun `getLatestRates should not refresh if data is fresh`() = runTest {
+        val base = "USD"
+        val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+        metadataDao.insertMetadata(dev.gustavo.finance.data.local.MetadataEntity("rates_$base", now))
+        exchangeRateDao.insertRates(listOf(ExchangeRateEntity(base, "EUR", 0.92, "2024-05-20")))
+
+        service.shouldThrow = true // Should not be called
+
+        val results = repository.getLatestRates(base).take(2).toList()
+        assertTrue(results.any { it is Result.Success })
+    }
+
+    @Test
+    fun `getCurrencies should not refresh if data is fresh`() = runTest {
+        val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+        metadataDao.insertMetadata(dev.gustavo.finance.data.local.MetadataEntity("currencies", now))
+        currencyDao.insertCurrencies(listOf(dev.gustavo.finance.data.local.CurrencyEntity("USD", "Dollar")))
+
+        service.shouldThrow = true // Should not be called
+
+        val results = repository.getCurrencies().take(2).toList()
+        assertTrue(results.any { it is Result.Success })
+    }
+
+    @Test
+    fun `getLatestRates should not emit success if DB flow is empty`() = runTest {
+        val base = "USD"
+        service.shouldThrow = true // Prevent network success
+
+        val results = repository.getLatestRates(base).take(2).toList()
+
+        // Should only have Loading and Error, no Success
+        assertTrue(results.none { it is Result.Success })
+    }
+
+    @Test
+    fun `getCurrencies should not emit success if DB flow is empty`() = runTest {
+        service.shouldThrow = true
+
+        val results = repository.getCurrencies().take(2).toList()
+
+        assertTrue(results.none { it is Result.Success })
+    }
 }
