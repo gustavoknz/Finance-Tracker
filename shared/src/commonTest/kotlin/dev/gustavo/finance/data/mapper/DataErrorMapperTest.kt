@@ -5,6 +5,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.RedirectResponseException
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.request.get
@@ -76,6 +77,45 @@ class DataErrorMapperTest {
             client.get("https://test.com")
         }
         assertEquals(DataError.Network.SERVICE_UNAVAILABLE, exception.toDataError())
+    }
+
+    @Test
+    fun `RedirectResponseException should map to UNKNOWN`() = runTest {
+        val client = HttpClient(MockEngine {
+            respond("", HttpStatusCode.MultipleChoices)
+        }) {
+            expectSuccess = true
+        }
+        val exception = assertFailsWith<RedirectResponseException> {
+            client.get("https://test.com")
+        }
+        assertEquals(DataError.Network.UNKNOWN, exception.toDataError())
+    }
+
+    @Test
+    fun `Forbidden status should map to CLIENT_ERROR`() = runTest {
+        val client = HttpClient(MockEngine {
+            respond("", HttpStatusCode.Forbidden)
+        }) {
+            expectSuccess = true
+        }
+        val exception = assertFailsWith<ClientRequestException> {
+            client.get("https://test.com")
+        }
+        assertEquals(DataError.Network.CLIENT_ERROR, exception.toDataError())
+    }
+
+    @Test
+    fun `BadGateway status should map to SERVER_ERROR`() = runTest {
+        val client = HttpClient(MockEngine {
+            respond("", HttpStatusCode.BadGateway)
+        }) {
+            expectSuccess = true
+        }
+        val exception = assertFailsWith<ServerResponseException> {
+            client.get("https://test.com")
+        }
+        assertEquals(DataError.Network.SERVER_ERROR, exception.toDataError())
     }
 
     @Test
