@@ -19,9 +19,7 @@ kotlin {
             "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
             "-opt-in=kotlinx.coroutines.FlowPreview",
             "-opt-in=org.koin.core.annotation.KoinExperimentalAPI",
-            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
-            "-opt-in=kotlinx.cinterop.ExperimentalForeignApi",
-            "-opt-in=androidx.compose.ui.test.ExperimentalTestApi"
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api"
         )
     }
     applyDefaultHierarchyTemplate()
@@ -119,6 +117,17 @@ kotlin {
                 implementation(libs.androidx.room.testing)
             }
             resources.srcDirs("schemas")
+        }
+    }
+
+    sourceSets.all {
+        languageSettings.apply {
+            if (name.contains("Test")) {
+                optIn("androidx.compose.ui.test.ExperimentalTestApi")
+            }
+            if (name.contains("ios")) {
+                optIn("kotlinx.cinterop.ExperimentalForeignApi")
+            }
         }
     }
 }
