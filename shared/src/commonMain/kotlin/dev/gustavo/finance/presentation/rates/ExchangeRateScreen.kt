@@ -21,6 +21,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -71,6 +72,11 @@ import finance_tracker.shared.generated.resources.pinned_header
 import finance_tracker.shared.generated.resources.retry_button
 import finance_tracker.shared.generated.resources.search_placeholder
 import finance_tracker.shared.generated.resources.unpin_content_description
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.delay
@@ -260,7 +266,13 @@ class ExchangeRateScreen : Screen {
                     .padding(horizontal = Spacing.medium)
                     .testTag("search_field"),
                 placeholder = { Text(stringResource(Res.string.search_placeholder)) },
-                leadingIcon = { Text("🔍", modifier = Modifier.semantics { contentDescription = "Search" }) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search",
+                        tint = MaterialTheme.colorScheme.outline
+                    )
+                },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
                         IconButton(
@@ -268,7 +280,10 @@ class ExchangeRateScreen : Screen {
                             modifier = Modifier.semantics { contentDescription = clearSearchDesc }
                                 .testTag("clear_search_button")
                         ) {
-                            Text("✕")
+                            Icon(
+                                imageVector = Icons.Default.Clear,
+                                contentDescription = clearSearchDesc
+                            )
                         }
                     }
                 },
@@ -392,10 +407,10 @@ class ExchangeRateScreen : Screen {
                         contentDescription = pinDescription
                     }
                 ) {
-                    Text(
-                        text = if (uiModel.isPinned) "★" else "☆",
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = if (uiModel.isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                    Icon(
+                        imageVector = if (uiModel.isPinned) Icons.Default.Star else Icons.Default.StarBorder,
+                        contentDescription = pinDescription,
+                        tint = if (uiModel.isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
                     )
                 }
                 Column(modifier = Modifier.weight(1f)) {
