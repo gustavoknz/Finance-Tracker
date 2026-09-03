@@ -60,23 +60,22 @@ jobs:
           name: ui-test-report
           path: shared/build/reports/tests/testAndroidHostTest/
 
-  # Note: iOS tests require a macOS runner and can be expensive in terms of CI minutes.
-  # build-and-test-ios:
-  #   name: iOS Tests
-  #   runs-on: macos-latest
-  #   steps:
-  #     - name: Checkout Code
-  #       uses: actions/checkout@v7
-  #
-  #     - name: Set up JDK 17
-  #       uses: actions/setup-java@v5
-  #       with:
-  #         java-version: '17'
-  #         distribution: 'temurin'
-  #         cache: 'gradle'
-  #
-  #     - name: Grant Execute Permission for Gradlew
-  #       run: chmod +x gradlew
-  #
-  #     - name: Run iOS Simulator Tests
-  #       run: ./gradlew :shared:iosSimulatorArm64Test
+  build-and-test-ios:
+    name: iOS Tests
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Grant Execute Permission for Gradlew
+        run: chmod +x gradlew
+
+      - name: Run iOS Simulator Tests
+        run: ./gradlew :shared:iosSimulatorArm64Test
