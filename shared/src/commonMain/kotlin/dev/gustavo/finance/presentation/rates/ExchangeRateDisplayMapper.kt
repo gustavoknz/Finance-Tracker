@@ -17,7 +17,7 @@ class ExchangeRateDisplayMapper(
     fun mapToSuccessState(
         currencyNames: Map<String, String>,
         ratesResponse: ExchangeRatesResponse,
-        pinnedCodes: Set<String>
+        pinnedCodes: Set<String>,
     ): ExchangeRateState.Success {
         val allUiRates = ratesResponse.rates.map { (code, rate) ->
             val decimals = if (rate < LOW_RATE_THRESHOLD) HIGH_PRECISION_DECIMALS else STANDARD_PRECISION_DECIMALS
@@ -27,7 +27,7 @@ class ExchangeRateDisplayMapper(
                 symbol = platformUtils.getCurrencySymbol(code),
                 rate = rate,
                 formattedRate = platformUtils.formatDecimal(rate, decimals),
-                isPinned = pinnedCodes.contains(code)
+                isPinned = pinnedCodes.contains(code),
             )
         }
 
@@ -36,7 +36,7 @@ class ExchangeRateDisplayMapper(
         return ExchangeRateState.Success(
             pinnedRates = pinned.toImmutableList(),
             otherRates = others.toImmutableList(),
-            lastUpdated = ratesResponse.date
+            lastUpdated = ratesResponse.date,
         )
     }
 }

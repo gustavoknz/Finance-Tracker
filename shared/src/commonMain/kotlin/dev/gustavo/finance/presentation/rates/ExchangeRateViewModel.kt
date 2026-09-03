@@ -39,7 +39,7 @@ import kotlin.time.Duration.Companion.milliseconds
 data class ExchangeRateUiState(
     val base: String,
     val searchQuery: String = "",
-    val content: ExchangeRateState = ExchangeRateState.Loading
+    val content: ExchangeRateState = ExchangeRateState.Loading,
 )
 
 @Immutable
@@ -50,7 +50,7 @@ sealed interface ExchangeRateState {
         val otherRates: ImmutableList<ExchangeRateUiModel>,
         val lastUpdated: String,
         val isRefreshing: Boolean = false,
-        val syncError: DataError.Network? = null
+        val syncError: DataError.Network? = null,
     ) : ExchangeRateState
 
     data class Error(val error: DataError.Network) : ExchangeRateState
@@ -72,7 +72,7 @@ class ExchangeRateViewModel(
     private val togglePinUseCase: TogglePinUseCase,
     private val displayMapper: ExchangeRateDisplayMapper,
     private val dispatchers: CoroutineDispatchers,
-    getBaseCurrencyUseCase: GetBaseCurrencyUseCase
+    getBaseCurrencyUseCase: GetBaseCurrencyUseCase,
 ) : ViewModel() {
 
     private val _currentBase = MutableStateFlow(getBaseCurrencyUseCase())
@@ -91,7 +91,7 @@ class ExchangeRateViewModel(
             combine(
                 getCurrenciesUseCase(),
                 getLatestRatesUseCase(base),
-                getPinnedCurrenciesUseCase()
+                getPinnedCurrenciesUseCase(),
             ) { currenciesResult, ratesResult, pinnedCodes ->
                 withContext(dispatchers.default) {
                     mapToContentState(currenciesResult, ratesResult, pinnedCodes)
@@ -119,7 +119,7 @@ class ExchangeRateViewModel(
     val state: StateFlow<ExchangeRateUiState> = combine(
         _currentBase,
         _searchQuery.debounce(300.milliseconds).distinctUntilChanged(),
-        contentState
+        contentState,
     ) { base, query, content ->
         val filteredContent = if (content is ExchangeRateState.Success && query.isNotBlank()) {
             withContext(dispatchers.default) {
@@ -143,19 +143,19 @@ class ExchangeRateViewModel(
             ExchangeRateUiState(
                 _currentBase.value,
                 _searchQuery.value,
-                ExchangeRateState.Error(DataError.Network.UNKNOWN)
-            )
+                ExchangeRateState.Error(DataError.Network.UNKNOWN),
+            ),
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = ExchangeRateUiState(_currentBase.value)
+        initialValue = ExchangeRateUiState(_currentBase.value),
     )
 
     private fun mapToContentState(
         currenciesResult: Result<Map<String, String>, DataError.Network>,
         ratesResult: Result<ExchangeRatesResponse, DataError.Network>,
-        pinnedCodes: Set<String>
+        pinnedCodes: Set<String>,
     ): ExchangeRateState {
         val currencies = currenciesResult.getOrNull()
         val rates = ratesResult.getOrNull()

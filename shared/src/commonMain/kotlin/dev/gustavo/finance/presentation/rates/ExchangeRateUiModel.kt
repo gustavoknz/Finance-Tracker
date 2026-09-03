@@ -9,5 +9,5 @@ data class ExchangeRateUiModel(
     val symbol: String,
     val rate: Double,
     val formattedRate: String,
-    val isPinned: Boolean = false
+    val isPinned: Boolean = false,
 )

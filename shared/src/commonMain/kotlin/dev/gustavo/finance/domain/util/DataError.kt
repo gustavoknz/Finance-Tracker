@@ -6,6 +6,6 @@ sealed interface DataError : Error {
         CLIENT_ERROR,
         SERVER_ERROR,
         UNKNOWN,
-        NO_INTERNET
+        NO_INTERNET,
     }
 }

@@ -111,7 +111,7 @@ class ExchangeRateScreen : Screen {
         ExchangeRateScreenContent(
             uiState = uiState,
             onAction = viewModel::onAction,
-            snackbarHostState = snackbarHostState
+            snackbarHostState = snackbarHostState,
         )
     }
 
@@ -119,7 +119,7 @@ class ExchangeRateScreen : Screen {
     fun ExchangeRateScreenContent(
         uiState: ExchangeRateUiState,
         onAction: (ExchangeRateAction) -> Unit,
-        snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
+        snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     ) {
         Scaffold(
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -148,7 +148,7 @@ class ExchangeRateScreen : Screen {
                     is ExchangeRateState.Success -> {
                         PullToRefreshBox(
                             isRefreshing = content.isRefreshing,
-                            onRefresh = { onAction(ExchangeRateAction.Refresh) }
+                            onRefresh = { onAction(ExchangeRateAction.Refresh) },
                         ) {
                             RateList(
                                 base = uiState.base,
@@ -159,7 +159,7 @@ class ExchangeRateScreen : Screen {
                                 isOffline = content.syncError != null,
                                 onSearchQueryChange = { onAction(ExchangeRateAction.SearchQueryChanged(it)) },
                                 onRateClick = { onAction(ExchangeRateAction.ChangeBaseCurrency(it)) },
-                                onTogglePin = { onAction(ExchangeRateAction.TogglePin(it)) }
+                                onTogglePin = { onAction(ExchangeRateAction.TogglePin(it)) },
                             )
                         }
                     }
@@ -167,7 +167,7 @@ class ExchangeRateScreen : Screen {
                     is ExchangeRateState.Error -> {
                         ErrorView(
                             error = content.error,
-                            onRetry = { onAction(ExchangeRateAction.ChangeBaseCurrency(uiState.base)) }
+                            onRetry = { onAction(ExchangeRateAction.ChangeBaseCurrency(uiState.base)) },
                         )
                     }
                 }
@@ -178,7 +178,7 @@ class ExchangeRateScreen : Screen {
     @Composable
     internal fun ErrorView(
         error: DataError.Network,
-        onRetry: () -> Unit
+        onRetry: () -> Unit,
     ) {
         val message = when (error) {
             DataError.Network.NO_INTERNET -> stringResource(Res.string.error_network)
@@ -220,7 +220,7 @@ class ExchangeRateScreen : Screen {
         isOffline: Boolean,
         onSearchQueryChange: (String) -> Unit,
         onRateClick: (String) -> Unit,
-        onTogglePin: (String) -> Unit
+        onTogglePin: (String) -> Unit,
     ) {
         var clickedCurrency by remember { mutableStateOf<String?>(null) }
 
@@ -325,7 +325,7 @@ class ExchangeRateScreen : Screen {
                                         onRateClick(uiModel.code)
                                     }
                                 },
-                                onTogglePin = { onTogglePin(uiModel.code) }
+                                onTogglePin = { onTogglePin(uiModel.code) },
                             )
                         }
                     }
@@ -361,7 +361,7 @@ class ExchangeRateScreen : Screen {
                                     onRateClick(uiModel.code)
                                 }
                             },
-                            onTogglePin = { onTogglePin(uiModel.code) }
+                            onTogglePin = { onTogglePin(uiModel.code) },
                         )
                     }
                 }
@@ -375,7 +375,7 @@ class ExchangeRateScreen : Screen {
         uiModel: ExchangeRateUiModel,
         onClick: () -> Unit,
         onTogglePin: () -> Unit,
-        modifier: Modifier = Modifier
+        modifier: Modifier = Modifier,
     ) {
         val description = stringResource(
             Res.string.currency_card_content_description,
@@ -455,10 +455,10 @@ internal fun RateItemPreview() {
                 symbol = "$",
                 rate = 1.0,
                 formattedRate = "1.00",
-                isPinned = true
+                isPinned = true,
             ),
             onClick = {},
-            onTogglePin = {}
+            onTogglePin = {},
         )
     }
 }
@@ -469,7 +469,7 @@ internal fun ErrorViewPreview() {
     MaterialTheme {
         ExchangeRateScreen().ErrorView(
             error = DataError.Network.NO_INTERNET,
-            onRetry = {}
+            onRetry = {},
         )
     }
 }
@@ -485,15 +485,15 @@ internal fun ExchangeRateScreenPreview() {
                 searchQuery = "",
                 content = ExchangeRateState.Success(
                     pinnedRates = persistentListOf(
-                        ExchangeRateUiModel("USD", "Dollar", "$", 1.08, "1.08", isPinned = true)
+                        ExchangeRateUiModel("USD", "Dollar", "$", 1.08, "1.08", isPinned = true),
                     ),
                     otherRates = persistentListOf(
-                        ExchangeRateUiModel("GBP", "Pound", "£", 0.85, "0.85")
+                        ExchangeRateUiModel("GBP", "Pound", "£", 0.85, "0.85"),
                     ),
-                    lastUpdated = "2024-05-20"
-                )
+                    lastUpdated = "2024-05-20",
+                ),
             ),
-            onAction = {}
+            onAction = {},
         )
     }
 }
