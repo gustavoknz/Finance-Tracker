@@ -405,7 +405,7 @@ class ExchangeRateScreen : Screen {
                     onClick = onTogglePin,
                     modifier = Modifier.semantics {
                         contentDescription = pinDescription
-                    }
+                    }.testTag("pin_button_${uiModel.code}")
                 ) {
                     Icon(
                         imageVector = if (uiModel.isPinned) Icons.Default.Star else Icons.Default.StarBorder,
