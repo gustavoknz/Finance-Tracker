@@ -203,7 +203,10 @@ class ExchangeRateScreen : Screen {
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(Spacing.medium))
-            Button(onClick = onRetry) {
+            Button(
+                onClick = onRetry,
+                modifier = Modifier.testTag("retry_button")
+            ) {
                 Text(stringResource(Res.string.retry_button))
             }
         }
@@ -246,7 +249,8 @@ class ExchangeRateScreen : Screen {
                             text = stringResource(Res.string.offline_notification),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.error,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.testTag("offline_notification")
                         )
                     }
                 }
