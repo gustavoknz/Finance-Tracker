@@ -35,4 +35,7 @@ class ExchangeRateUiTest : BaseExchangeRateUiTest() {
 
     @Test
     fun testOfflineNotificationShown() = runOfflineNotificationShownTest()
+
+    @Test
+    fun testScrollToNewlyPinnedItem() = runScrollToNewlyPinnedItemTest()
 }

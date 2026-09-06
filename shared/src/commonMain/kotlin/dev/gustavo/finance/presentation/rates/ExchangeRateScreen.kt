@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -226,9 +227,21 @@ class ExchangeRateScreen : Screen {
         onTogglePin: (String) -> Unit,
     ) {
         var clickedCurrency by remember { mutableStateOf<String?>(null) }
+        var lastPinnedCode by remember { mutableStateOf<String?>(null) }
+        val listState = rememberLazyListState()
 
         LaunchedEffect(pinnedRates, otherRates) {
             clickedCurrency = null
+        }
+
+        LaunchedEffect(pinnedRates) {
+            val newlyPinned = pinnedRates.find { it.code == lastPinnedCode }
+            if (newlyPinned != null) {
+                // Find index: "Pinned" header at 0, items follow
+                val index = pinnedRates.indexOf(newlyPinned) + 1
+                listState.animateScrollToItem(index)
+                lastPinnedCode = null
+            }
         }
 
         val coroutineScope = rememberCoroutineScope()
@@ -296,6 +309,7 @@ class ExchangeRateScreen : Screen {
             )
 
             LazyColumn(
+                state = listState,
                 contentPadding = PaddingValues(Spacing.medium),
                 verticalArrangement = Arrangement.spacedBy(Spacing.small)
             ) {
@@ -365,7 +379,12 @@ class ExchangeRateScreen : Screen {
                                     onRateClick(uiModel.code)
                                 }
                             },
-                            onTogglePin = { onTogglePin(uiModel.code) },
+                            onTogglePin = {
+                                if (!uiModel.isPinned) {
+                                    lastPinnedCode = uiModel.code
+                                }
+                                onTogglePin(uiModel.code)
+                            },
                         )
                     }
                 }
