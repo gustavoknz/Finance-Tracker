@@ -29,7 +29,7 @@ abstract class BaseExchangeRateUiTest {
             )
         }
 
-        onNodeWithTag("loading_indicator").assertIsDisplayed()
+        onNodeWithTag(ExchangeRateTestTags.LOADING).assertIsDisplayed()
     }
 
     fun runSuccessStateTest() = runComposeUiTest {
@@ -52,9 +52,9 @@ abstract class BaseExchangeRateUiTest {
             )
         }
 
-        onNodeWithTag("exchange_rate_content").assertIsDisplayed()
-        onNodeWithTag("rate_item_USD").assertIsDisplayed()
-        onNodeWithTag("rate_item_GBP").assertIsDisplayed()
+        onNodeWithTag(ExchangeRateTestTags.CONTENT).assertIsDisplayed()
+        onNodeWithTag(ExchangeRateTestTags.rateItem("USD")).assertIsDisplayed()
+        onNodeWithTag(ExchangeRateTestTags.rateItem("GBP")).assertIsDisplayed()
     }
 
     fun runErrorStateTest() = runComposeUiTest {
@@ -70,7 +70,7 @@ abstract class BaseExchangeRateUiTest {
             )
         }
 
-        onNodeWithTag("error_view").assertIsDisplayed()
+        onNodeWithTag(ExchangeRateTestTags.ERROR_VIEW).assertIsDisplayed()
     }
 
     fun runSearchQueryChangedTest() = runComposeUiTest {
@@ -89,7 +89,7 @@ abstract class BaseExchangeRateUiTest {
             )
         }
 
-        onNodeWithTag("search_field").performTextInput("USD")
+        onNodeWithTag(ExchangeRateTestTags.SEARCH_FIELD).performTextInput("USD")
         assertTrue(actionReceived is ExchangeRateAction.SearchQueryChanged)
         assertEquals("USD", (actionReceived as ExchangeRateAction.SearchQueryChanged).query)
     }
@@ -114,7 +114,7 @@ abstract class BaseExchangeRateUiTest {
             )
         }
 
-        onNodeWithTag("pin_button_USD", useUnmergedTree = true).performClick()
+        onNodeWithTag(ExchangeRateTestTags.pinButton("USD"), useUnmergedTree = true).performClick()
         assertTrue(actionReceived is ExchangeRateAction.TogglePin)
         assertEquals("USD", (actionReceived as ExchangeRateAction.TogglePin).code)
     }
@@ -139,7 +139,7 @@ abstract class BaseExchangeRateUiTest {
             )
         }
 
-        onNodeWithTag("rate_item_USD").performClick()
+        onNodeWithTag(ExchangeRateTestTags.rateItem("USD")).performClick()
         
         // Wait for the animation delay (Durations.SHORT = 500ms)
         mainClock.advanceTimeBy(600)
@@ -166,7 +166,7 @@ abstract class BaseExchangeRateUiTest {
             )
         }
 
-        onNodeWithTag("clear_search_button").performClick()
+        onNodeWithTag(ExchangeRateTestTags.CLEAR_SEARCH_BUTTON).performClick()
         assertTrue(actionReceived is ExchangeRateAction.SearchQueryChanged)
         assertEquals("", (actionReceived as ExchangeRateAction.SearchQueryChanged).query)
     }
@@ -185,7 +185,7 @@ abstract class BaseExchangeRateUiTest {
             )
         }
 
-        onNodeWithTag("retry_button").performClick()
+        onNodeWithTag(ExchangeRateTestTags.RETRY_BUTTON).performClick()
         assertTrue(actionReceived is ExchangeRateAction.ChangeBaseCurrency)
         assertEquals("EUR", (actionReceived as ExchangeRateAction.ChangeBaseCurrency).code)
     }
@@ -206,7 +206,7 @@ abstract class BaseExchangeRateUiTest {
             )
         }
 
-        onNodeWithTag("offline_notification").assertIsDisplayed()
+        onNodeWithTag(ExchangeRateTestTags.OFFLINE_NOTIFICATION).assertIsDisplayed()
     }
 
     @Suppress("LongMethod")
@@ -273,9 +273,9 @@ abstract class BaseExchangeRateUiTest {
         }
 
         // Bring NZD into view by searching
-        onNodeWithTag("search_field").performTextInput("NZD")
+        onNodeWithTag(ExchangeRateTestTags.SEARCH_FIELD).performTextInput("NZD")
         
-        onNodeWithTag("pin_button_NZD", useUnmergedTree = true).performClick()
+        onNodeWithTag(ExchangeRateTestTags.pinButton("NZD"), useUnmergedTree = true).performClick()
 
         assertTrue(isPinned)
         
@@ -287,6 +287,6 @@ abstract class BaseExchangeRateUiTest {
         // We verified the scroll happens by checking if it's displayed? 
         // Well, the requirement is "should be scrolled". 
         // In runComposeUiTest, we can check if the item is displayed.
-        onNodeWithTag("rate_item_NZD").assertIsDisplayed()
+        onNodeWithTag(ExchangeRateTestTags.rateItem("NZD")).assertIsDisplayed()
     }
 }

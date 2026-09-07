@@ -136,13 +136,13 @@ class ExchangeRateScreen : Screen {
                 )
             }
         ) { padding ->
-            Box(modifier = Modifier.fillMaxSize().padding(padding).testTag("exchange_rate_content")) {
+            Box(modifier = Modifier.fillMaxSize().padding(padding).testTag(ExchangeRateTestTags.CONTENT)) {
                 when (val content = uiState.content) {
                     is ExchangeRateState.Loading -> {
                         CircularProgressIndicator(
                             modifier = Modifier
                                 .align(Alignment.Center)
-                                .testTag("loading_indicator")
+                                .testTag(ExchangeRateTestTags.LOADING)
                         )
                     }
 
@@ -193,7 +193,7 @@ class ExchangeRateScreen : Screen {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(Spacing.medium)
-                .testTag("error_view"),
+                .testTag(ExchangeRateTestTags.ERROR_VIEW),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -206,7 +206,7 @@ class ExchangeRateScreen : Screen {
             Spacer(modifier = Modifier.height(Spacing.medium))
             Button(
                 onClick = onRetry,
-                modifier = Modifier.testTag("retry_button")
+                modifier = Modifier.testTag(ExchangeRateTestTags.RETRY_BUTTON)
             ) {
                 Text(stringResource(Res.string.retry_button))
             }
@@ -263,7 +263,7 @@ class ExchangeRateScreen : Screen {
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.error,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.testTag("offline_notification")
+                            modifier = Modifier.testTag(ExchangeRateTestTags.OFFLINE_NOTIFICATION)
                         )
                     }
                 }
@@ -281,7 +281,7 @@ class ExchangeRateScreen : Screen {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = Spacing.medium)
-                    .testTag("search_field"),
+                    .testTag(ExchangeRateTestTags.SEARCH_FIELD),
                 placeholder = { Text(stringResource(Res.string.search_placeholder)) },
                 leadingIcon = {
                     Icon(
@@ -295,7 +295,7 @@ class ExchangeRateScreen : Screen {
                         IconButton(
                             onClick = { onSearchQueryChange("") },
                             modifier = Modifier.semantics { contentDescription = clearSearchDesc }
-                                .testTag("clear_search_button")
+                                .testTag(ExchangeRateTestTags.CLEAR_SEARCH_BUTTON)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Clear,
@@ -324,7 +324,7 @@ class ExchangeRateScreen : Screen {
                                 .padding(vertical = Spacing.small)
                                 .animateItem()
                                 .semantics { heading() }
-                                .testTag("header_pinned")
+                                .testTag(ExchangeRateTestTags.HEADER_PINNED)
                         )
                     }
                     items(pinnedRates, key = { "pinned_${it.code}" }) { uiModel ->
@@ -358,7 +358,7 @@ class ExchangeRateScreen : Screen {
                                 .padding(vertical = Spacing.small)
                                 .animateItem()
                                 .semantics { heading() }
-                                .testTag("header_all")
+                                .testTag(ExchangeRateTestTags.HEADER_ALL)
                         )
                     }
                 }
@@ -417,7 +417,7 @@ class ExchangeRateScreen : Screen {
                 .semantics(mergeDescendants = true) {
                     contentDescription = description
                 }
-                .testTag("rate_item_${uiModel.code}"),
+                .testTag(ExchangeRateTestTags.rateItem(uiModel.code)),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Row(
@@ -428,7 +428,7 @@ class ExchangeRateScreen : Screen {
                     onClick = onTogglePin,
                     modifier = Modifier.semantics {
                         contentDescription = pinDescription
-                    }.testTag("pin_button_${uiModel.code}")
+                    }.testTag(ExchangeRateTestTags.pinButton(uiModel.code))
                 ) {
                     Icon(
                         imageVector = if (uiModel.isPinned) Icons.Default.Star else Icons.Default.StarBorder,
