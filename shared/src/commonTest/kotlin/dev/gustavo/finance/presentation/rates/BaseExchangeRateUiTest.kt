@@ -1,6 +1,7 @@
 package dev.gustavo.finance.presentation.rates
 
-import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -11,23 +12,33 @@ import dev.gustavo.finance.domain.util.DataError
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
-import androidx.compose.runtime.getValue
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalTestApi::class)
 abstract class BaseExchangeRateUiTest {
 
-    fun runLoadingStateTest() = runComposeUiTest {
+    /**
+     * Helper to set up the screen content with a given state and action handler.
+     */
+    private fun ComposeUiTest.setupContent(
+        uiState: ExchangeRateUiState,
+        onAction: (ExchangeRateAction) -> Unit = {},
+    ) {
         setContent {
             ExchangeRateScreen().ExchangeRateScreenContent(
-                uiState = ExchangeRateUiState(
-                    base = "EUR",
-                    content = ExchangeRateState.Loading,
-                ),
-                onAction = {},
+                uiState = uiState,
+                onAction = onAction,
             )
         }
+    }
+
+    fun runLoadingStateTest() = runComposeUiTest {
+        setupContent(
+            uiState = ExchangeRateUiState(
+                base = "EUR",
+                content = ExchangeRateState.Loading,
+            ),
+        )
 
         onNodeWithTag(ExchangeRateTestTags.LOADING).assertIsDisplayed()
     }
@@ -38,19 +49,16 @@ abstract class BaseExchangeRateUiTest {
             ExchangeRateUiModel("GBP", "Pound", "£", 0.85, "0.85"),
         )
 
-        setContent {
-            ExchangeRateScreen().ExchangeRateScreenContent(
-                uiState = ExchangeRateUiState(
-                    base = "EUR",
-                    content = ExchangeRateState.Success(
-                        pinnedRates = persistentListOf(),
-                        otherRates = rates,
-                        lastUpdated = "2024-05-20",
-                    ),
+        setupContent(
+            uiState = ExchangeRateUiState(
+                base = "EUR",
+                content = ExchangeRateState.Success(
+                    pinnedRates = persistentListOf(),
+                    otherRates = rates,
+                    lastUpdated = "2024-05-20",
                 ),
-                onAction = {},
-            )
-        }
+            ),
+        )
 
         onNodeWithTag(ExchangeRateTestTags.CONTENT).assertIsDisplayed()
         onNodeWithTag(ExchangeRateTestTags.rateItem("USD")).assertIsDisplayed()
@@ -58,36 +66,31 @@ abstract class BaseExchangeRateUiTest {
     }
 
     fun runErrorStateTest() = runComposeUiTest {
-        setContent {
-            ExchangeRateScreen().ExchangeRateScreenContent(
-                uiState = ExchangeRateUiState(
-                    base = "EUR",
-                    content = ExchangeRateState.Error(
-                        error = DataError.Network.NO_INTERNET,
-                    ),
+        setupContent(
+            uiState = ExchangeRateUiState(
+                base = "EUR",
+                content = ExchangeRateState.Error(
+                    error = DataError.Network.NO_INTERNET,
                 ),
-                onAction = {},
-            )
-        }
+            ),
+        )
 
         onNodeWithTag(ExchangeRateTestTags.ERROR_VIEW).assertIsDisplayed()
     }
 
     fun runSearchQueryChangedTest() = runComposeUiTest {
         var actionReceived: ExchangeRateAction? = null
-        setContent {
-            ExchangeRateScreen().ExchangeRateScreenContent(
-                uiState = ExchangeRateUiState(
-                    base = "EUR",
-                    content = ExchangeRateState.Success(
-                        pinnedRates = persistentListOf(),
-                        otherRates = persistentListOf(),
-                        lastUpdated = "2024-05-20",
-                    ),
+        setupContent(
+            uiState = ExchangeRateUiState(
+                base = "EUR",
+                content = ExchangeRateState.Success(
+                    pinnedRates = persistentListOf(),
+                    otherRates = persistentListOf(),
+                    lastUpdated = "2024-05-20",
                 ),
-                onAction = { actionReceived = it },
-            )
-        }
+            ),
+            onAction = { actionReceived = it },
+        )
 
         onNodeWithTag(ExchangeRateTestTags.SEARCH_FIELD).performTextInput("USD")
         assertTrue(actionReceived is ExchangeRateAction.SearchQueryChanged)
@@ -100,19 +103,17 @@ abstract class BaseExchangeRateUiTest {
             ExchangeRateUiModel("USD", "Dollar", "$", 1.08, "1.08"),
         )
 
-        setContent {
-            ExchangeRateScreen().ExchangeRateScreenContent(
-                uiState = ExchangeRateUiState(
-                    base = "EUR",
-                    content = ExchangeRateState.Success(
-                        pinnedRates = persistentListOf(),
-                        otherRates = rates,
-                        lastUpdated = "2024-05-20",
-                    ),
+        setupContent(
+            uiState = ExchangeRateUiState(
+                base = "EUR",
+                content = ExchangeRateState.Success(
+                    pinnedRates = persistentListOf(),
+                    otherRates = rates,
+                    lastUpdated = "2024-05-20",
                 ),
-                onAction = { actionReceived = it },
-            )
-        }
+            ),
+            onAction = { actionReceived = it },
+        )
 
         onNodeWithTag(ExchangeRateTestTags.pinButton("USD"), useUnmergedTree = true).performClick()
         assertTrue(actionReceived is ExchangeRateAction.TogglePin)
@@ -125,22 +126,20 @@ abstract class BaseExchangeRateUiTest {
             ExchangeRateUiModel("USD", "Dollar", "$", 1.08, "1.08"),
         )
 
-        setContent {
-            ExchangeRateScreen().ExchangeRateScreenContent(
-                uiState = ExchangeRateUiState(
-                    base = "EUR",
-                    content = ExchangeRateState.Success(
-                        pinnedRates = persistentListOf(),
-                        otherRates = rates,
-                        lastUpdated = "2024-05-20",
-                    ),
+        setupContent(
+            uiState = ExchangeRateUiState(
+                base = "EUR",
+                content = ExchangeRateState.Success(
+                    pinnedRates = persistentListOf(),
+                    otherRates = rates,
+                    lastUpdated = "2024-05-20",
                 ),
-                onAction = { actionReceived = it },
-            )
-        }
+            ),
+            onAction = { actionReceived = it },
+        )
 
         onNodeWithTag(ExchangeRateTestTags.rateItem("USD")).performClick()
-        
+
         // Wait for the animation delay (Durations.SHORT = 500ms)
         mainClock.advanceTimeBy(600)
         waitForIdle()
@@ -151,20 +150,18 @@ abstract class BaseExchangeRateUiTest {
 
     fun runClearSearchActionTest() = runComposeUiTest {
         var actionReceived: ExchangeRateAction? = null
-        setContent {
-            ExchangeRateScreen().ExchangeRateScreenContent(
-                uiState = ExchangeRateUiState(
-                    base = "EUR",
-                    searchQuery = "USD",
-                    content = ExchangeRateState.Success(
-                        pinnedRates = persistentListOf(),
-                        otherRates = persistentListOf(),
-                        lastUpdated = "2024-05-20",
-                    ),
+        setupContent(
+            uiState = ExchangeRateUiState(
+                base = "EUR",
+                searchQuery = "USD",
+                content = ExchangeRateState.Success(
+                    pinnedRates = persistentListOf(),
+                    otherRates = persistentListOf(),
+                    lastUpdated = "2024-05-20",
                 ),
-                onAction = { actionReceived = it },
-            )
-        }
+            ),
+            onAction = { actionReceived = it },
+        )
 
         onNodeWithTag(ExchangeRateTestTags.CLEAR_SEARCH_BUTTON).performClick()
         assertTrue(actionReceived is ExchangeRateAction.SearchQueryChanged)
@@ -173,17 +170,15 @@ abstract class BaseExchangeRateUiTest {
 
     fun runRetryActionTest() = runComposeUiTest {
         var actionReceived: ExchangeRateAction? = null
-        setContent {
-            ExchangeRateScreen().ExchangeRateScreenContent(
-                uiState = ExchangeRateUiState(
-                    base = "EUR",
-                    content = ExchangeRateState.Error(
-                        error = DataError.Network.SERVER_ERROR,
-                    ),
+        setupContent(
+            uiState = ExchangeRateUiState(
+                base = "EUR",
+                content = ExchangeRateState.Error(
+                    error = DataError.Network.SERVER_ERROR,
                 ),
-                onAction = { actionReceived = it },
-            )
-        }
+            ),
+            onAction = { actionReceived = it },
+        )
 
         onNodeWithTag(ExchangeRateTestTags.RETRY_BUTTON).performClick()
         assertTrue(actionReceived is ExchangeRateAction.ChangeBaseCurrency)
@@ -191,20 +186,17 @@ abstract class BaseExchangeRateUiTest {
     }
 
     fun runOfflineNotificationShownTest() = runComposeUiTest {
-        setContent {
-            ExchangeRateScreen().ExchangeRateScreenContent(
-                uiState = ExchangeRateUiState(
-                    base = "EUR",
-                    content = ExchangeRateState.Success(
-                        pinnedRates = persistentListOf(),
-                        otherRates = persistentListOf(),
-                        lastUpdated = "2024-05-20",
-                        syncError = DataError.Network.NO_INTERNET,
-                    ),
+        setupContent(
+            uiState = ExchangeRateUiState(
+                base = "EUR",
+                content = ExchangeRateState.Success(
+                    pinnedRates = persistentListOf(),
+                    otherRates = persistentListOf(),
+                    lastUpdated = "2024-05-20",
+                    syncError = DataError.Network.NO_INTERNET,
                 ),
-                onAction = {},
-            )
-        }
+            ),
+        )
 
         onNodeWithTag(ExchangeRateTestTags.OFFLINE_NOTIFICATION).assertIsDisplayed()
     }
@@ -274,19 +266,15 @@ abstract class BaseExchangeRateUiTest {
 
         // Bring NZD into view by searching
         onNodeWithTag(ExchangeRateTestTags.SEARCH_FIELD).performTextInput("NZD")
-        
+
         onNodeWithTag(ExchangeRateTestTags.pinButton("NZD"), useUnmergedTree = true).performClick()
 
         assertTrue(isPinned)
-        
+
         // Wait for potential scroll animation
         mainClock.advanceTimeBy(1000)
         waitForIdle()
 
-        // After pinning, NZD should be in the pinned section at the top.
-        // We verified the scroll happens by checking if it's displayed? 
-        // Well, the requirement is "should be scrolled". 
-        // In runComposeUiTest, we can check if the item is displayed.
         onNodeWithTag(ExchangeRateTestTags.rateItem("NZD")).assertIsDisplayed()
     }
 }
