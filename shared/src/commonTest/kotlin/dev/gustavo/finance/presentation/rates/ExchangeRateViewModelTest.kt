@@ -10,32 +10,27 @@ import dev.gustavo.finance.domain.usecase.GetPinnedCurrenciesUseCase
 import dev.gustavo.finance.domain.usecase.SetBaseCurrencyUseCase
 import dev.gustavo.finance.domain.usecase.TogglePinUseCase
 import dev.gustavo.finance.domain.util.DataError
+import dev.gustavo.finance.util.BaseViewModelTest
 import dev.gustavo.finance.util.CoroutineDispatchers
 import dev.gustavo.finance.util.FakePlatformUtils
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class ExchangeRateViewModelTest {
+class ExchangeRateViewModelTest : BaseViewModelTest() {
 
     private lateinit var viewModel: ExchangeRateViewModel
     private lateinit var repository: FakeExchangeRateRepository
     private lateinit var preferencesRepository: FakePreferencesRepository
 
-    private val testDispatcher = UnconfinedTestDispatcher()
-
     @BeforeTest
-    fun setUp() {
-        Dispatchers.setMain(testDispatcher)
+    override fun setUp() {
+        super.setUp()
         repository = FakeExchangeRateRepository()
         preferencesRepository = FakePreferencesRepository()
         // Use a base different from USD to trigger transitions more clearly
@@ -49,13 +44,8 @@ class ExchangeRateViewModelTest {
             togglePinUseCase = TogglePinUseCase(repository),
             displayMapper = ExchangeRateDisplayMapper(FakePlatformUtils()),
             dispatchers = CoroutineDispatchers(testDispatcher, testDispatcher, testDispatcher),
-            getBaseCurrencyUseCase = GetBaseCurrencyUseCase(preferencesRepository)
+            getBaseCurrencyUseCase = GetBaseCurrencyUseCase(preferencesRepository),
         )
-    }
-
-    @AfterTest
-    fun tearDown() {
-        Dispatchers.resetMain()
     }
 
     @Test
@@ -71,9 +61,7 @@ class ExchangeRateViewModelTest {
         repository.currenciesResult = currencies
         repository.latestRatesResult = rates
 
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.state.collect {}
-        }
+        collectState(viewModel.state)
 
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
 
@@ -84,7 +72,7 @@ class ExchangeRateViewModelTest {
 
         assertTrue(content is ExchangeRateState.Success, "Expected Success state but was $content")
         assertEquals("EUR", uiState.base)
-        assertEquals(1, content.otherRates.size)
+        assertEquals(1, (content as ExchangeRateState.Success).otherRates.size)
         assertEquals("USD", content.otherRates[0].code)
         assertEquals("Dollar", content.otherRates[0].name)
         assertFalse(content.isRefreshing)
@@ -94,9 +82,7 @@ class ExchangeRateViewModelTest {
     fun `error in currencies should emit Error state`() = runTest {
         repository.shouldThrowCurrencies = true
 
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.state.collect {}
-        }
+        collectState(viewModel.state)
 
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
 
@@ -106,7 +92,7 @@ class ExchangeRateViewModelTest {
         val content = uiState.content
 
         assertTrue(content is ExchangeRateState.Error, "Expected Error state but was $content")
-        assertEquals(DataError.Network.UNKNOWN, content.error)
+        assertEquals(DataError.Network.UNKNOWN, (content as ExchangeRateState.Error).error)
         assertEquals("EUR", uiState.base)
     }
 
@@ -115,9 +101,7 @@ class ExchangeRateViewModelTest {
         repository.currenciesResult = mapOf("USD" to "Dollar")
         repository.shouldThrowRates = true
 
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.state.collect {}
-        }
+        collectState(viewModel.state)
 
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
 
@@ -136,9 +120,7 @@ class ExchangeRateViewModelTest {
         repository.currenciesResult = currencies
         repository.latestRatesResult = ExchangeRatesResponse(1.0, "USD", "2024-05-20", mapOf("EUR" to 0.92))
 
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.state.collect {}
-        }
+        collectState(viewModel.state)
 
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("USD"))
         testScheduler.advanceTimeBy(400)
@@ -156,7 +138,7 @@ class ExchangeRateViewModelTest {
 
     @Test
     fun `loading state when data is already success should show refreshing`() = runTest {
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.state.collect {} }
+        collectState(viewModel.state)
 
         // 1. Success
         repository.currenciesResult = mapOf("USD" to "Dollar", "EUR" to "Euro")
@@ -167,7 +149,7 @@ class ExchangeRateViewModelTest {
         val initialUiState = viewModel.state.value
         val initialContent = initialUiState.content
         assertTrue(initialContent is ExchangeRateState.Success)
-        assertFalse(initialContent.isRefreshing)
+        assertFalse((initialContent as ExchangeRateState.Success).isRefreshing)
 
         // 2. Trigger loading for DIFFERENT base to see transition
         repository.emitLoadingOnly = true
@@ -178,9 +160,9 @@ class ExchangeRateViewModelTest {
         val refreshingContent = refreshingUiState.content
         assertTrue(
             refreshingContent is ExchangeRateState.Success,
-            "Expected Success (refreshing) but was $refreshingContent"
+            "Expected Success (refreshing) but was $refreshingContent",
         )
-        assertTrue(refreshingContent.isRefreshing)
+        assertTrue((refreshingContent as ExchangeRateState.Success).isRefreshing)
         assertEquals("USD", initialUiState.base)
         assertEquals("EUR", refreshingUiState.base)
     }
@@ -192,11 +174,9 @@ class ExchangeRateViewModelTest {
         repository.latestRatesResult = ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08))
 
         val events = mutableListOf<ExchangeRateUiEvent>()
-        val eventJob = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+        collectState(viewModel.state)
+        backgroundScope.launch(testDispatcher) {
             viewModel.uiEvents.collect { events.add(it) }
-        }
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.state.collect {}
         }
 
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
@@ -210,16 +190,14 @@ class ExchangeRateViewModelTest {
         val uiState = viewModel.state.value
         val content = uiState.content
         assertTrue(content is ExchangeRateState.Success)
-        assertEquals(DataError.Network.UNKNOWN, content.syncError)
+        assertEquals(DataError.Network.UNKNOWN, (content as ExchangeRateState.Success).syncError)
         assertEquals(1, events.size)
         assertTrue(events[0] is ExchangeRateUiEvent.ShowOfflineNotification)
-
-        eventJob.cancel()
     }
 
     @Test
     fun `onSearchQueryChange should filter rates`() = runTest {
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.state.collect {} }
+        collectState(viewModel.state)
 
         repository.currenciesResult = mapOf("USD" to "Dollar", "EUR" to "Euro", "BRL" to "Real")
         repository.latestRatesResult =
@@ -253,7 +231,7 @@ class ExchangeRateViewModelTest {
 
     @Test
     fun `togglePin should update pinned state`() = runTest {
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.state.collect {} }
+        collectState(viewModel.state)
 
         repository.currenciesResult = mapOf("USD" to "Dollar", "EUR" to "Euro")
         repository.latestRatesResult = ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08))
@@ -276,7 +254,7 @@ class ExchangeRateViewModelTest {
 
     @Test
     fun `mapToContentState should return isRefreshing when results are loading but have data`() = runTest {
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.state.collect {} }
+        collectState(viewModel.state)
 
         repository.currenciesResult = mapOf("USD" to "Dollar")
         repository.latestRatesResult = ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08))
@@ -288,12 +266,12 @@ class ExchangeRateViewModelTest {
 
         val content = viewModel.state.value.content
         assertTrue(content is ExchangeRateState.Success, "Expected Success state but was $content")
-        assertTrue(content.isRefreshing)
+        assertTrue((content as ExchangeRateState.Success).isRefreshing)
     }
 
     @Test
     fun `catch block should emit generic error state`() = runTest {
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.state.collect {} }
+        collectState(viewModel.state)
 
         repository.forceException = true
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
@@ -301,12 +279,12 @@ class ExchangeRateViewModelTest {
 
         val content = viewModel.state.value.content
         assertTrue(content is ExchangeRateState.Error)
-        assertEquals(DataError.Network.UNKNOWN, content.error)
+        assertEquals(DataError.Network.UNKNOWN, (content as ExchangeRateState.Error).error)
     }
 
     @Test
     fun `mapToContentState should return Loading if data is partially missing`() = runTest {
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.state.collect {} }
+        collectState(viewModel.state)
 
         repository.currenciesResult = emptyMap()
         repository.latestRatesResult = null

@@ -28,11 +28,12 @@ class RealExchangeRateRepositoryTest {
     private lateinit var pinDao: FakePinDao
     private lateinit var metricsCollector: FakeMetricsCollector
     private lateinit var repository: RealExchangeRateRepository
+
     private val testDispatcher = UnconfinedTestDispatcher()
     private val dispatchers = CoroutineDispatchers(
         main = testDispatcher,
         default = testDispatcher,
-        io = testDispatcher
+        io = testDispatcher,
     )
 
     @BeforeTest
@@ -43,7 +44,15 @@ class RealExchangeRateRepositoryTest {
         metadataDao = FakeMetadataDao()
         pinDao = FakePinDao()
         metricsCollector = FakeMetricsCollector()
-        repository = RealExchangeRateRepository(service, currencyDao, exchangeRateDao, metadataDao, pinDao, dispatchers, metricsCollector)
+        repository = RealExchangeRateRepository(
+            service,
+            currencyDao,
+            exchangeRateDao,
+            metadataDao,
+            pinDao,
+            dispatchers,
+            metricsCollector,
+        )
     }
 
     @Test
