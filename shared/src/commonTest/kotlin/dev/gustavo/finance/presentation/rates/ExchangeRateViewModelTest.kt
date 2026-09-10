@@ -13,13 +13,13 @@ import dev.gustavo.finance.domain.util.DataError
 import dev.gustavo.finance.util.BaseViewModelTest
 import dev.gustavo.finance.util.CoroutineDispatchers
 import dev.gustavo.finance.util.FakePlatformUtils
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class ExchangeRateViewModelTest : BaseViewModelTest() {
@@ -70,9 +70,9 @@ class ExchangeRateViewModelTest : BaseViewModelTest() {
         val uiState = viewModel.state.value
         val content = uiState.content
 
-        assertTrue(content is ExchangeRateState.Success, "Expected Success state but was $content")
+        assertIs<ExchangeRateState.Success>(content)
         assertEquals("EUR", uiState.base)
-        assertEquals(1, (content as ExchangeRateState.Success).otherRates.size)
+        assertEquals(1, content.otherRates.size)
         assertEquals("USD", content.otherRates[0].code)
         assertEquals("Dollar", content.otherRates[0].name)
         assertFalse(content.isRefreshing)
@@ -91,8 +91,8 @@ class ExchangeRateViewModelTest : BaseViewModelTest() {
         val uiState = viewModel.state.value
         val content = uiState.content
 
-        assertTrue(content is ExchangeRateState.Error, "Expected Error state but was $content")
-        assertEquals(DataError.Network.UNKNOWN, (content as ExchangeRateState.Error).error)
+        assertIs<ExchangeRateState.Error>(content)
+        assertEquals(DataError.Network.UNKNOWN, content.error)
         assertEquals("EUR", uiState.base)
     }
 
@@ -110,7 +110,7 @@ class ExchangeRateViewModelTest : BaseViewModelTest() {
         val uiState = viewModel.state.value
         val content = uiState.content
 
-        assertTrue(content is ExchangeRateState.Error, "Expected Error state but was $content")
+        assertIs<ExchangeRateState.Error>(content)
         assertEquals("EUR", uiState.base)
     }
 
@@ -125,7 +125,7 @@ class ExchangeRateViewModelTest : BaseViewModelTest() {
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("USD"))
         testScheduler.advanceTimeBy(400)
         assertEquals("USD", viewModel.state.value.base)
-        assertTrue(viewModel.state.value.content is ExchangeRateState.Success)
+        assertIs<ExchangeRateState.Success>(viewModel.state.value.content)
 
         repository.latestRatesResult = ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08))
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
@@ -148,8 +148,8 @@ class ExchangeRateViewModelTest : BaseViewModelTest() {
 
         val initialUiState = viewModel.state.value
         val initialContent = initialUiState.content
-        assertTrue(initialContent is ExchangeRateState.Success)
-        assertFalse((initialContent as ExchangeRateState.Success).isRefreshing)
+        assertIs<ExchangeRateState.Success>(initialContent)
+        assertFalse(initialContent.isRefreshing)
 
         // 2. Trigger loading for DIFFERENT base to see transition
         repository.emitLoadingOnly = true
@@ -158,11 +158,8 @@ class ExchangeRateViewModelTest : BaseViewModelTest() {
 
         val refreshingUiState = viewModel.state.value
         val refreshingContent = refreshingUiState.content
-        assertTrue(
-            refreshingContent is ExchangeRateState.Success,
-            "Expected Success (refreshing) but was $refreshingContent",
-        )
-        assertTrue((refreshingContent as ExchangeRateState.Success).isRefreshing)
+        assertIs<ExchangeRateState.Success>(refreshingContent)
+        assertTrue(refreshingContent.isRefreshing)
         assertEquals("USD", initialUiState.base)
         assertEquals("EUR", refreshingUiState.base)
     }
@@ -189,8 +186,8 @@ class ExchangeRateViewModelTest : BaseViewModelTest() {
 
         val uiState = viewModel.state.value
         val content = uiState.content
-        assertTrue(content is ExchangeRateState.Success)
-        assertEquals(DataError.Network.UNKNOWN, (content as ExchangeRateState.Success).syncError)
+        assertIs<ExchangeRateState.Success>(content)
+        assertEquals(DataError.Network.UNKNOWN, content.syncError)
         assertEquals(1, events.size)
         assertTrue(events[0] is ExchangeRateUiEvent.ShowOfflineNotification)
     }
@@ -205,27 +202,31 @@ class ExchangeRateViewModelTest : BaseViewModelTest() {
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
         testScheduler.advanceTimeBy(400)
 
-        val initialContent = viewModel.state.value.content as ExchangeRateState.Success
-        assertEquals(2, initialContent.otherRates.size)
+        val content = viewModel.state.value.content
+        assertIs<ExchangeRateState.Success>(content)
+        assertEquals(2, content.otherRates.size)
 
         // Filter by code
         viewModel.onAction(ExchangeRateAction.SearchQueryChanged("US"))
         testScheduler.advanceTimeBy(400)
-        val filteredByCode = viewModel.state.value.content as ExchangeRateState.Success
+        val filteredByCode = viewModel.state.value.content
+        assertIs<ExchangeRateState.Success>(filteredByCode)
         assertEquals(1, filteredByCode.otherRates.size)
         assertEquals("USD", filteredByCode.otherRates[0].code)
 
         // Filter by name
         viewModel.onAction(ExchangeRateAction.SearchQueryChanged("Real"))
         testScheduler.advanceTimeBy(400)
-        val filteredByName = viewModel.state.value.content as ExchangeRateState.Success
+        val filteredByName = viewModel.state.value.content
+        assertIs<ExchangeRateState.Success>(filteredByName)
         assertEquals(1, filteredByName.otherRates.size)
         assertEquals("BRL", filteredByName.otherRates[0].code)
 
         // Clear filter
         viewModel.onAction(ExchangeRateAction.SearchQueryChanged(""))
         testScheduler.advanceTimeBy(400)
-        val clearedFilter = viewModel.state.value.content as ExchangeRateState.Success
+        val clearedFilter = viewModel.state.value.content
+        assertIs<ExchangeRateState.Success>(clearedFilter)
         assertEquals(2, clearedFilter.otherRates.size)
     }
 
@@ -238,14 +239,16 @@ class ExchangeRateViewModelTest : BaseViewModelTest() {
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
         testScheduler.advanceTimeBy(400)
 
-        val initialContent = viewModel.state.value.content as ExchangeRateState.Success
-        assertEquals(1, initialContent.otherRates.size)
-        assertEquals(0, initialContent.pinnedRates.size)
+        val content = viewModel.state.value.content
+        assertIs<ExchangeRateState.Success>(content)
+        assertEquals(1, content.otherRates.size)
+        assertEquals(0, content.pinnedRates.size)
 
         viewModel.onAction(ExchangeRateAction.TogglePin("USD"))
         testScheduler.advanceTimeBy(400)
 
-        val pinnedContent = viewModel.state.value.content as ExchangeRateState.Success
+        val pinnedContent = viewModel.state.value.content
+        assertIs<ExchangeRateState.Success>(pinnedContent)
         assertEquals(0, pinnedContent.otherRates.size)
         assertEquals(1, pinnedContent.pinnedRates.size)
         assertEquals("USD", pinnedContent.pinnedRates[0].code)
@@ -265,8 +268,8 @@ class ExchangeRateViewModelTest : BaseViewModelTest() {
         testScheduler.advanceTimeBy(400)
 
         val content = viewModel.state.value.content
-        assertTrue(content is ExchangeRateState.Success, "Expected Success state but was $content")
-        assertTrue((content as ExchangeRateState.Success).isRefreshing)
+        assertIs<ExchangeRateState.Success>(content)
+        assertTrue(content.isRefreshing)
     }
 
     @Test
@@ -278,8 +281,8 @@ class ExchangeRateViewModelTest : BaseViewModelTest() {
         testScheduler.advanceTimeBy(400)
 
         val content = viewModel.state.value.content
-        assertTrue(content is ExchangeRateState.Error)
-        assertEquals(DataError.Network.UNKNOWN, (content as ExchangeRateState.Error).error)
+        assertIs<ExchangeRateState.Error>(content)
+        assertEquals(DataError.Network.UNKNOWN, content.error)
     }
 
     @Test
