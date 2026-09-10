@@ -11,9 +11,9 @@ A professional-grade Currency Tracker application built with **Kotlin Multiplatf
 - **Smart Caching & TTL**: 
   - Exchange rates stay fresh with a 30-minute TTL.
   - Automatic cache cleanup on startup prunes data older than 7 days, keeping the local database lean.
-- **Pinned Currencies**: Favorite your most-used currencies to keep them at the top of the list.
-- **Advanced Search**: High-performance, debounced search with instant filtering across currency codes and names.
-- **Graceful Error Handling**: Persistent "Offline" indicators notify users when sync fails, allowing continued use of cached data without interruption.
+- **Pinned Currencies**: Favorite your most-used currencies to keep them at the top of the list with automatic scrolling for immediate visual feedback.
+- **Advanced Search**: High-performance, debounced search with instant filtering and professional Material Icon iconography.
+- **Graceful Error Handling**: Persistent "Offline" indicators and illustrative error views notify users when sync fails, allowing continued use of cached data without interruption.
 - **Multi-platform UI**: Pixel-perfect shared UI using Compose Multiplatform with native-feeling animations and adaptive layouts.
 
 ## 🏗️ Architecture & Best Practices
@@ -28,12 +28,13 @@ The project is built on **Clean Architecture** and follows strict **Senior Andro
   - UI models use `@Immutable` and stable keys to skip unnecessary recompositions.
 - **Reactive Data Layer**: Single Source of Truth (SSOT) via Room database flows. Repositories coordinate network and local storage seamlessly.
 - **Testing Excellence**: 
-  - **44+ tests** including Repository/ViewModel unit tests, Room migration tests, and Robolectric-powered Compose UI tests.
-  - 100% logic coverage in shared code.
+  - **Unified UI Testing**: Shared test logic in `commonTest` ensures 100% behavior parity between Android (via Robolectric host tests) and iOS (native simulator tests).
+  - **80+ tests** including Repository/ViewModel unit tests, Room migration tests, and expanded coverage for user interactions like pinning and searching.
+- **Code Hygiene**: Adheres to modern Kotlin standards, including consistent trailing commas for improved Git diff readability and centralized experimental API management.
 
 ## 🛠️ Tech Stack
 
-- **UI**: Compose Multiplatform
+- **UI**: Compose Multiplatform (with Material Icons Extended)
 - **Persistence**: Jetpack Room (KMP)
 - **Dependency Injection**: Koin (Core, Compose, ViewModel)
 - **Networking**: Ktor Client (with Exponential Backoff Retry & Logging)
@@ -57,7 +58,7 @@ The project is built on **Clean Architecture** and follows strict **Senior Andro
 - **Configuration Management**: Sensitive values like the Base URL are managed via an injected `AppConfig` interface, keeping secrets out of the logic layer.
 - **Code Obfuscation**: Production builds use **R8** minification and specialized ProGuard rules for Room, Ktor, and Serialization.
 - **Observability**: Structured logs for every network request and database emission. Built-in metrics tracking for cache performance.
-- **CI/CD**: Fully automated GitHub Actions pipeline for build verification, linting (Detekt), and UI test validation.
+- **CI/CD**: Fully automated GitHub Actions pipeline for build verification, linting (Detekt), and unified UI test validation across Android and iOS platforms.
 
 ## 🏃 Getting Started
 
