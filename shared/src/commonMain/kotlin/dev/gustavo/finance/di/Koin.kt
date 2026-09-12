@@ -9,6 +9,7 @@ val appModule = module {
         commonModule,
         networkModule,
         databaseModule,
+        dataModule,
         domainModule,
         viewModelModule,
         platformModule
