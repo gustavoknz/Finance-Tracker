@@ -27,7 +27,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.flow.stateIn
@@ -75,7 +74,13 @@ class ExchangeRateViewModel(
     getBaseCurrencyUseCase: GetBaseCurrencyUseCase,
 ) : ViewModel() {
 
-    private val _currentBase = MutableStateFlow(getBaseCurrencyUseCase())
+    private val currentBase: StateFlow<String> = getBaseCurrencyUseCase()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = "EUR" // Fallback initial value
+        )
+
     private val _refreshTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     private val _searchQuery = MutableStateFlow("")
 
@@ -83,10 +88,9 @@ class ExchangeRateViewModel(
     val uiEvents = _uiEvents.asSharedFlow()
 
     private val contentState: Flow<ExchangeRateState> = combine(
-        _currentBase,
+        currentBase,
         _refreshTrigger.onStart { emit(Unit) }
     ) { base, _ -> base }
-        .onEach { setBaseCurrencyUseCase(it) }
         .flatMapLatest { base ->
             combine(
                 getCurrenciesUseCase(),
@@ -117,7 +121,7 @@ class ExchangeRateViewModel(
         .distinctUntilChanged()
 
     val state: StateFlow<ExchangeRateUiState> = combine(
-        _currentBase,
+        currentBase,
         _searchQuery.debounce(300.milliseconds).distinctUntilChanged(),
         contentState,
     ) { base, query, content ->
@@ -141,7 +145,7 @@ class ExchangeRateViewModel(
     }.catch { _ ->
         emit(
             ExchangeRateUiState(
-                _currentBase.value,
+                currentBase.value,
                 _searchQuery.value,
                 ExchangeRateState.Error(DataError.Network.UNKNOWN),
             ),
@@ -149,7 +153,7 @@ class ExchangeRateViewModel(
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = ExchangeRateUiState(_currentBase.value),
+        initialValue = ExchangeRateUiState(currentBase.value),
     )
 
     private fun mapToContentState(
@@ -179,7 +183,7 @@ class ExchangeRateViewModel(
     fun onAction(action: ExchangeRateAction) {
         when (action) {
             is ExchangeRateAction.ChangeBaseCurrency -> {
-                _currentBase.value = action.code
+                setBaseCurrencyUseCase(action.code)
             }
 
             is ExchangeRateAction.SearchQueryChanged -> {

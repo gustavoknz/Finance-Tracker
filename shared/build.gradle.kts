@@ -102,6 +102,7 @@ kotlin {
             implementation(libs.sqlite.bundled)
             
             implementation(libs.multiplatform.settings)
+            implementation(libs.multiplatform.settings.coroutines)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
