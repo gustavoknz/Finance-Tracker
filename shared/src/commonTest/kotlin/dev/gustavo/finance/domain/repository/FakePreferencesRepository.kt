@@ -12,8 +12,6 @@ class FakePreferencesRepository : PreferencesRepository {
 
     private val _baseCurrencyFlow = MutableStateFlow(storedBaseCurrency)
 
-    override fun getBaseCurrency(): String = storedBaseCurrency
-
     override fun getBaseCurrencyFlow(): Flow<String> = _baseCurrencyFlow
 
     override fun setBaseCurrency(code: String) {

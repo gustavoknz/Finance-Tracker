@@ -1,6 +1,8 @@
 package dev.gustavo.finance.data.repository
 
 import com.russhwolf.settings.MapSettings
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -17,14 +19,14 @@ class SettingsPreferencesRepositoryTest {
     }
 
     @Test
-    fun `getBaseCurrency should return default when not set`() {
-        assertEquals("EUR", repository.getBaseCurrency())
+    fun `getBaseCurrencyFlow should emit default when not set`() = runTest {
+        assertEquals("EUR", repository.getBaseCurrencyFlow().first())
     }
 
     @Test
-    fun `getBaseCurrency should return saved value`() {
+    fun `getBaseCurrencyFlow should emit saved value`() = runTest {
         repository.setBaseCurrency("USD")
-        assertEquals("USD", repository.getBaseCurrency())
+        assertEquals("USD", repository.getBaseCurrencyFlow().first())
     }
 
     @Test

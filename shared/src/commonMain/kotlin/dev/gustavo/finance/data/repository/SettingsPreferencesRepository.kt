@@ -20,10 +20,6 @@ class SettingsPreferencesRepository(
         private const val DEFAULT_BASE_CURRENCY = "EUR"
     }
 
-    override fun getBaseCurrency(): String {
-        return settings.getString(KEY_BASE_CURRENCY, DEFAULT_BASE_CURRENCY)
-    }
-
     override fun getBaseCurrencyFlow(): Flow<String> {
         return observableSettings.getStringFlow(KEY_BASE_CURRENCY, DEFAULT_BASE_CURRENCY)
     }
