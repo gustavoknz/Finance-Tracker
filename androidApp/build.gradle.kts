@@ -13,18 +13,6 @@ kotlin {
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
 }
-dependencies {
-    implementation(project(":shared"))
-
-    implementation(libs.androidx.activity.compose)
-    implementation(libs.koin.android)
-    implementation(libs.koin.compose)
-
-    implementation(libs.compose.uiToolingPreview)
-    debugImplementation(libs.compose.uiTooling)
-    debugImplementation(libs.compose.test.manifest)
-    androidTestImplementation(libs.compose.test.junit4)
-}
 
 android {
     namespace = "dev.gustavo.finance"
@@ -37,6 +25,7 @@ android {
         versionCode = 1
         versionName = "1.0"
     }
+
     signingConfigs {
         create("release") {
             // These should be in local.properties or environment variables
@@ -46,11 +35,7 @@ android {
             keyPassword = project.findProperty("RELEASE_KEY_PASSWORD") as String?
         }
     }
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
-    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -58,15 +43,36 @@ android {
             signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     buildFeatures {
         compose = true
     }
+
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+}
+
+dependencies {
+    implementation(project(":shared"))
+
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.koin.android)
+    implementation(libs.koin.compose)
+
+    implementation(libs.compose.uiToolingPreview)
+    debugImplementation(libs.compose.uiTooling)
+    debugImplementation(libs.compose.test.manifest)
+    androidTestImplementation(libs.compose.test.junit4)
 }
