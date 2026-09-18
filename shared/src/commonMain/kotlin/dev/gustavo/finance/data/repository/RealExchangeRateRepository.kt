@@ -1,14 +1,17 @@
 package dev.gustavo.finance.data.repository
 
+import co.touchlab.kermit.Logger
 import dev.gustavo.finance.data.local.CurrencyDao
-import dev.gustavo.finance.data.local.CurrencyEntity
 import dev.gustavo.finance.data.local.ExchangeRateDao
-import dev.gustavo.finance.data.local.ExchangeRateEntity
 import dev.gustavo.finance.data.local.MetadataDao
 import dev.gustavo.finance.data.local.MetadataEntity
 import dev.gustavo.finance.data.local.PinDao
 import dev.gustavo.finance.data.local.PinEntity
+import dev.gustavo.finance.data.mapper.toCurrencyEntities
+import dev.gustavo.finance.data.mapper.toCurrencyMap
 import dev.gustavo.finance.data.mapper.toDataError
+import dev.gustavo.finance.data.mapper.toEntities
+import dev.gustavo.finance.data.mapper.toResponse
 import dev.gustavo.finance.data.remote.CurrencyService
 import dev.gustavo.finance.domain.model.ExchangeRatesResponse
 import dev.gustavo.finance.domain.repository.ExchangeRateRepository
@@ -17,7 +20,6 @@ import dev.gustavo.finance.domain.util.Result
 import dev.gustavo.finance.domain.util.getOrNull
 import dev.gustavo.finance.util.CoroutineDispatchers
 import dev.gustavo.finance.util.MetricsCollector
-import co.touchlab.kermit.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
@@ -72,19 +74,14 @@ class RealExchangeRateRepository(
         
         try {
             val cachedEntities = exchangeRateDao.getRatesByBaseOnce(base)
-            val cachedResponse = if (cachedEntities.isNotEmpty()) {
+            val cachedResponse = cachedEntities.toResponse(base)
+            
+            if (cachedResponse != null) {
                 logger.d { "Found ${cachedEntities.size} cached rates for $base" }
                 metricsCollector.trackCacheHit("rates_$base")
-                ExchangeRatesResponse(
-                    amount = 1.0,
-                    base = base,
-                    date = cachedEntities.first().date,
-                    rates = cachedEntities.associate { it.targetCode to it.rate }
-                )
             } else {
                 logger.d { "No cached rates found for $base" }
                 metricsCollector.trackCacheMiss("rates_$base")
-                null
             }
 
             send(Result.Loading(cachedResponse))
@@ -107,15 +104,7 @@ class RealExchangeRateRepository(
                     logger.d { "Rates for $base are stale or missing, fetching from network..." }
                     metricsCollector.trackRefresh("rates_$base")
                     val remoteResponse = currencyService.getLatestRates(base)
-                    val entities = remoteResponse.rates.map { (targetCode, rate) ->
-                        ExchangeRateEntity(
-                            baseCode = base,
-                            targetCode = targetCode,
-                            rate = rate,
-                            date = remoteResponse.date,
-                            localTimestamp = currentTimeMillis
-                        )
-                    }
+                    val entities = remoteResponse.toEntities(currentTimeMillis)
                     exchangeRateDao.insertRates(entities)
                     metadataDao.insertMetadata(MetadataEntity("rates_$base", currentTimeMillis))
                     logger.d { "Successfully updated ${entities.size} rates for $base in database" }
@@ -131,16 +120,7 @@ class RealExchangeRateRepository(
         try {
             exchangeRateDao.getRatesByBase(base)
                 .mapNotNull { entities ->
-                    if (entities.isNotEmpty()) {
-                        Result.Success(
-                            ExchangeRatesResponse(
-                                amount = 1.0,
-                                base = base,
-                                date = entities.first().date,
-                                rates = entities.associate { it.targetCode to it.rate }
-                            )
-                        )
-                    } else null
+                    entities.toResponse(base)?.let { Result.Success(it) }
                 }
                 .collect { 
                     logger.d { "Emitting ${it.getOrNull()?.rates?.size ?: 0} rates for $base from DB flow" }
@@ -160,7 +140,7 @@ class RealExchangeRateRepository(
             val cachedMap = if (cachedEntities.isNotEmpty()) {
                 logger.d { "Found ${cachedEntities.size} cached currencies" }
                 metricsCollector.trackCacheHit("currencies")
-                cachedEntities.associate { it.code to it.name }
+                cachedEntities.toCurrencyMap()
             } else {
                 logger.d { "No cached currencies found" }
                 metricsCollector.trackCacheMiss("currencies")
@@ -187,9 +167,7 @@ class RealExchangeRateRepository(
                     logger.d { "Currencies are stale or missing, fetching from network..." }
                     metricsCollector.trackRefresh("currencies")
                     val remoteCurrencies = currencyService.getCurrencies()
-                    val entities = remoteCurrencies.map { (code, name) ->
-                        CurrencyEntity(code = code, name = name, localTimestamp = currentTimeMillis)
-                    }
+                    val entities = remoteCurrencies.toCurrencyEntities(currentTimeMillis)
                     currencyDao.insertCurrencies(entities)
                     metadataDao.insertMetadata(MetadataEntity("currencies", currentTimeMillis))
                     logger.d { "Successfully updated ${entities.size} currencies in database" }
@@ -206,7 +184,7 @@ class RealExchangeRateRepository(
             currencyDao.getAllCurrencies()
                 .mapNotNull { entities ->
                     if (entities.isNotEmpty()) {
-                        Result.Success(entities.associate { it.code to it.name })
+                        Result.Success(entities.toCurrencyMap())
                     } else null
                 }
                 .collect { 
