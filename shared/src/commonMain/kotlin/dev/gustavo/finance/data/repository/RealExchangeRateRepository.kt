@@ -9,7 +9,6 @@ import dev.gustavo.finance.data.local.PinDao
 import dev.gustavo.finance.data.local.PinEntity
 import dev.gustavo.finance.data.mapper.toCurrencyEntities
 import dev.gustavo.finance.data.mapper.toCurrencyMap
-import dev.gustavo.finance.data.mapper.toDataError
 import dev.gustavo.finance.data.mapper.toEntities
 import dev.gustavo.finance.data.mapper.toResponse
 import dev.gustavo.finance.data.remote.CurrencyService
@@ -37,7 +36,7 @@ class RealExchangeRateRepository(
     private val metadataDao: MetadataDao,
     private val pinDao: PinDao,
     private val dispatchers: CoroutineDispatchers,
-    private val metricsCollector: MetricsCollector
+    private val metricsCollector: MetricsCollector,
 ) : ExchangeRateRepository {
 
     private val logger = Logger.withTag("ExchangeRateRepository")
@@ -72,75 +71,73 @@ class RealExchangeRateRepository(
 
     override fun getLatestRates(base: String): Flow<Result<ExchangeRatesResponse, DataError.Network>> {
         val key = ratesKey(base)
-        return networkBoundResource(
-            queryOnce = {
-                val cachedEntities = exchangeRateDao.getRatesByBaseOnce(base)
-                val cachedResponse = cachedEntities.toResponse(base)
-                if (cachedResponse != null) {
-                    logger.d { "Found ${cachedEntities.size} cached rates for $base" }
-                    metricsCollector.trackCacheHit(key)
-                } else {
-                    logger.d { "No cached rates found for $base" }
-                    metricsCollector.trackCacheMiss(key)
-                }
-                cachedResponse
+        return managedNetworkResource(
+            key = key,
+            ttl = RATES_TTL,
+            queryOnce = { exchangeRateDao.getRatesByBaseOnce(base).toResponse(base) },
+            queryFlow = { exchangeRateDao.getRatesByBase(base).mapNotNull { it.toResponse(base) } },
+            fetch = { currencyService.getLatestRates(base) },
+            saveFetchResult = { response, timestamp ->
+                exchangeRateDao.insertRates(response.toEntities(timestamp))
             },
-            queryFlow = {
-                exchangeRateDao.getRatesByBase(base)
-                    .mapNotNull { it.toResponse(base) }
-            },
-            fetch = {
-                logger.d { "Rates for $base are stale or missing, fetching from network..." }
-                metricsCollector.trackRefresh(key)
-                currencyService.getLatestRates(base)
-            },
-            saveFetchResult = { remoteResponse ->
-                val currentTimeMillis = Clock.System.now().toEpochMilliseconds()
-                val entities = remoteResponse.toEntities(currentTimeMillis)
-                exchangeRateDao.insertRates(entities)
-                metadataDao.insertMetadata(MetadataEntity(key, currentTimeMillis))
-                logger.d { "Successfully updated ${entities.size} rates for $base in database" }
-            },
-            shouldFetch = { isCacheStale(key, RATES_TTL) },
-            onFetchFailed = { logger.e(it) { "Error fetching latest rates for $base" } },
-            onQueryFailed = { logger.e(it) { "Error observing rates for $base in DB" } }
-        ).flowOn(dispatchers.io)
+        )
     }
 
     override fun getCurrencies(): Flow<Result<Map<String, String>, DataError.Network>> =
-        networkBoundResource(
+        managedNetworkResource(
+            key = KEY_CURRENCIES,
+            ttl = CURRENCIES_TTL,
             queryOnce = {
-                val cachedEntities = currencyDao.getAllCurrenciesOnce()
-                if (cachedEntities.isNotEmpty()) {
-                    logger.d { "Found ${cachedEntities.size} cached currencies" }
-                    metricsCollector.trackCacheHit(KEY_CURRENCIES)
-                    cachedEntities.toCurrencyMap()
-                } else {
-                    logger.d { "No cached currencies found" }
-                    metricsCollector.trackCacheMiss(KEY_CURRENCIES)
-                    null
-                }
+                val cached = currencyDao.getAllCurrenciesOnce()
+                if (cached.isNotEmpty()) cached.toCurrencyMap() else null
             },
             queryFlow = {
-                currencyDao.getAllCurrencies()
-                    .mapNotNull { if (it.isNotEmpty()) it.toCurrencyMap() else null }
+                currencyDao.getAllCurrencies().mapNotNull { if (it.isNotEmpty()) it.toCurrencyMap() else null }
             },
-            fetch = {
-                logger.d { "Currencies are stale or missing, fetching from network..." }
-                metricsCollector.trackRefresh(KEY_CURRENCIES)
-                currencyService.getCurrencies()
+            fetch = { currencyService.getCurrencies() },
+            saveFetchResult = { response, timestamp ->
+                currencyDao.insertCurrencies(response.toCurrencyEntities(timestamp))
             },
-            saveFetchResult = { remoteCurrencies ->
-                val currentTimeMillis = Clock.System.now().toEpochMilliseconds()
-                val entities = remoteCurrencies.toCurrencyEntities(currentTimeMillis)
-                currencyDao.insertCurrencies(entities)
-                metadataDao.insertMetadata(MetadataEntity(KEY_CURRENCIES, currentTimeMillis))
-                logger.d { "Successfully updated ${entities.size} currencies in database" }
-            },
-            shouldFetch = { isCacheStale(KEY_CURRENCIES, CURRENCIES_TTL) },
-            onFetchFailed = { logger.e(it) { "Error fetching currencies" } },
-            onQueryFailed = { logger.e(it) { "Error observing currencies in DB" } }
-        ).flowOn(dispatchers.io)
+        )
+
+    /**
+     * Higher-level helper that automates metadata, metrics, and logging for resources.
+     */
+    private fun <ResultType, RequestType> managedNetworkResource(
+        key: String,
+        ttl: Long,
+        queryOnce: suspend () -> ResultType?,
+        queryFlow: () -> Flow<ResultType>,
+        fetch: suspend () -> RequestType,
+        saveFetchResult: suspend (RequestType, Long) -> Unit,
+    ): Flow<Result<ResultType, DataError.Network>> = networkBoundResource(
+        queryOnce = {
+            val data = queryOnce()
+            if (data != null) {
+                logger.d { "Cache HIT for resource: $key" }
+                metricsCollector.trackCacheHit(key)
+            } else {
+                logger.d { "Cache MISS for resource: $key" }
+                metricsCollector.trackCacheMiss(key)
+            }
+            data
+        },
+        queryFlow = queryFlow,
+        fetch = {
+            logger.d { "Fetching fresh data for resource: $key" }
+            metricsCollector.trackRefresh(key)
+            fetch()
+        },
+        saveFetchResult = { response ->
+            val timestamp = Clock.System.now().toEpochMilliseconds()
+            saveFetchResult(response, timestamp)
+            metadataDao.insertMetadata(MetadataEntity(key, timestamp))
+            logger.d { "Successfully updated database and metadata for resource: $key" }
+        },
+        shouldFetch = { isCacheStale(key, ttl) },
+        onFetchFailed = { logger.e(it) { "Network fetch failed for resource: $key" } },
+        onQueryFailed = { logger.e(it) { "Database error for resource: $key" } },
+    ).flowOn(dispatchers.io)
 
     private suspend fun isCacheStale(key: String, ttl: Long): Boolean {
         val lastUpdatedMillis = metadataDao.getLastUpdatedTimestamp(key)
@@ -154,9 +151,9 @@ class RealExchangeRateRepository(
 
     override fun getPinnedCurrencies(): Flow<Set<String>> =
         pinDao.getAllPinnedCodes()
-            .map { 
+            .map {
                 logger.d { "Found ${it.size} pinned codes in DB" }
-                it.toSet() 
+                it.toSet()
             }
             .flowOn(dispatchers.io)
 
