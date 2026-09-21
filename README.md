@@ -11,6 +11,7 @@ A professional-grade Currency Tracker application built with **Kotlin Multiplatf
 - **Smart Caching & TTL**: 
   - Exchange rates stay fresh with a 30-minute TTL.
   - Automatic cache cleanup on startup prunes data older than 7 days, keeping the local database lean.
+- **Reactive Preferences**: Seamless UI updates when settings change (e.g., base currency) using a fully reactive flow-based preference system.
 - **Pinned Currencies**: Favorite your most-used currencies to keep them at the top of the list with automatic scrolling for immediate visual feedback.
 - **Advanced Search**: High-performance, debounced search with instant filtering and professional Material Icon iconography.
 - **Graceful Error Handling**: Persistent "Offline" indicators and illustrative error views notify users when sync fails, allowing continued use of cached data without interruption.
@@ -20,13 +21,15 @@ A professional-grade Currency Tracker application built with **Kotlin Multiplatf
 
 The project is built on **Clean Architecture** and follows strict **Senior Android Developer** standards:
 
-- **State Boundaries (MVI-Lite)**: Uses a unified `ExchangeRateUiState` and a pure ViewModel with a single `onAction` entry point, ensuring predictable state transitions and easy debugging.
-- **KMP Discipline**: Platform-specific logic (formatting, currency symbols) is abstracted behind a `PlatformUtils` interface and provided via DI, keeping `commonMain` pure and testable.
+- **State Boundaries (MVI-Lite)**: Uses a unified `ExchangeRateUiState` and a pure ViewModel with a single `onAction` entry point. The UI is highly modularized, with complex screens decomposed into focused, testable components.
+- **KMP Discipline**: Platform-specific logic is abstracted behind interfaces and provided via a clean, multi-layered DI structure (Data, Domain, ViewModel, and Platform modules).
 - **Performance Optimized**:
   - Heavy mapping and filtering are offloaded to background dispatchers (`Default`).
   - Search input is debounced to minimize CPU usage.
   - UI models use `@Immutable` and stable keys to skip unnecessary recompositions.
-- **Reactive Data Layer**: Single Source of Truth (SSOT) via Room database flows. Repositories coordinate network and local storage seamlessly.
+- **Advanced Data Layer**:
+  - **Single Source of Truth (SSOT)**: Powered by Room Multiplatform database flows.
+  - **Automated Synchronization**: Uses a custom `NetworkBoundResource` utility to automate the "Cache-First with Network Refresh" pattern, including TTL management, metrics tracking, and error handling.
 - **Testing Excellence**: 
   - **Unified UI Testing**: Shared test logic in `commonTest` ensures 100% behavior parity between Android (via Robolectric host tests) and iOS (native simulator tests).
   - **80+ tests** including Repository/ViewModel unit tests, Room migration tests, and expanded coverage for user interactions like pinning and searching.
@@ -36,7 +39,7 @@ The project is built on **Clean Architecture** and follows strict **Senior Andro
 
 - **UI**: Compose Multiplatform (with Material Icons Extended)
 - **Persistence**: Jetpack Room (KMP)
-- **Dependency Injection**: Koin (Core, Compose, ViewModel)
+- **Dependency Injection**: Koin (Core, Compose, ViewModel, and Annotations-lite)
 - **Networking**: Ktor Client (with Exponential Backoff Retry & Logging)
 - **Logging**: Kermit (Structured multiplatform logging)
 - **Metrics**: AtomicFU (Thread-safe cache hit/miss tracking)
