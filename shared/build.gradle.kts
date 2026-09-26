@@ -145,11 +145,14 @@ kotlin {
 dependencies {
     androidRuntimeClasspath(libs.compose.uiTooling)
     add("kspAndroid", libs.androidx.room.compiler)
-    add("kspAndroidHostTest", libs.androidx.room.compiler)
     add("kspIosArm64", libs.androidx.room.compiler)
     add("kspIosSimulatorArm64", libs.androidx.room.compiler)
 }
 
 room {
     schemaDirectory("$projectDir/schemas")
+}
+
+tasks.matching { it.name.contains("Lint") || it.name.contains("lint") }.configureEach {
+    dependsOn(tasks.matching { it.name.startsWith("ksp") })
 }
