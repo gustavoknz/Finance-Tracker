@@ -17,6 +17,7 @@
 
 # Ktor rules
 -keep class io.ktor.** { *; }
+-dontwarn java.lang.management.**
 
 # Koin rules
 -keep class org.koin.** { *; }

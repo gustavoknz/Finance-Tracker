@@ -1,3 +1,4 @@
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -5,6 +6,20 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinx.kover)
     alias(libs.plugins.detekt)
+}
+
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { load(it) }
+    }
+}
+
+fun getSigningProperty(key: String): String? {
+    return (findProperty(key) as? String)
+        ?.takeIf { it.isNotBlank() }
+        ?: System.getenv(key)?.takeIf { it.isNotBlank() }
+        ?: localProperties.getProperty(key)?.takeIf { it.isNotBlank() }
 }
 
 kotlin {
@@ -28,11 +43,24 @@ android {
 
     signingConfigs {
         create("release") {
-            // These should be in local.properties or environment variables
-            storeFile = file(project.findProperty("RELEASE_STORE_FILE") ?: "keystore.jks")
-            storePassword = project.findProperty("RELEASE_STORE_PASSWORD") as String?
-            keyAlias = project.findProperty("RELEASE_KEY_ALIAS") as String?
-            keyPassword = project.findProperty("RELEASE_KEY_PASSWORD") as String?
+            val storeFilePath = getSigningProperty("RELEASE_STORE_FILE")
+            val storePasswordProp = getSigningProperty("RELEASE_STORE_PASSWORD")
+            val keyAliasProp = getSigningProperty("RELEASE_KEY_ALIAS")
+            val keyPasswordProp = getSigningProperty("RELEASE_KEY_PASSWORD")
+
+            if ((storeFilePath != null) &&
+                !storePasswordProp.isNullOrBlank() &&
+                !keyAliasProp.isNullOrBlank() &&
+                !keyPasswordProp.isNullOrBlank()
+            ) {
+                val keystoreFile = file(storeFilePath)
+                if (keystoreFile.exists()) {
+                    storeFile = keystoreFile
+                    storePassword = storePasswordProp
+                    keyAlias = keyAliasProp
+                    keyPassword = keyPasswordProp
+                }
+            }
         }
     }
 
@@ -40,7 +68,12 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            signingConfig = signingConfigs.getByName("release")
+            val releaseSigning = signingConfigs.getByName("release")
+            signingConfig = if ((releaseSigning.storeFile != null) && (releaseSigning.storeFile?.exists() == true)) {
+                releaseSigning
+            } else {
+                signingConfigs.getByName("debug")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
