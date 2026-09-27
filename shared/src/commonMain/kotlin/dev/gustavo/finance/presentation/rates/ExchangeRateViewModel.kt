@@ -122,26 +122,27 @@ class ExchangeRateViewModel(
 
     val state: StateFlow<ExchangeRateUiState> = combine(
         currentBase,
+        _searchQuery,
         _searchQuery.debounce(300.milliseconds).distinctUntilChanged(),
         contentState,
-    ) { base, query, content ->
-        val filteredContent = if (content is ExchangeRateState.Success && query.isNotBlank()) {
+    ) { base, immediateQuery, debouncedQuery, content ->
+        val filteredContent = if ((content is ExchangeRateState.Success) && debouncedQuery.isNotBlank()) {
             withContext(dispatchers.default) {
                 content.copy(
                     pinnedRates = content.pinnedRates.filter {
-                        it.code.contains(query, ignoreCase = true) ||
-                                it.name.contains(query, ignoreCase = true)
+                        it.code.contains(debouncedQuery, ignoreCase = true) ||
+                                it.name.contains(debouncedQuery, ignoreCase = true)
                     }.toImmutableList(),
                     otherRates = content.otherRates.filter {
-                        it.code.contains(query, ignoreCase = true) ||
-                                it.name.contains(query, ignoreCase = true)
+                        it.code.contains(debouncedQuery, ignoreCase = true) ||
+                                it.name.contains(debouncedQuery, ignoreCase = true)
                     }.toImmutableList()
                 )
             }
         } else {
             content
         }
-        ExchangeRateUiState(base, query, filteredContent)
+        ExchangeRateUiState(base, immediateQuery, filteredContent)
     }.catch { _ ->
         emit(
             ExchangeRateUiState(

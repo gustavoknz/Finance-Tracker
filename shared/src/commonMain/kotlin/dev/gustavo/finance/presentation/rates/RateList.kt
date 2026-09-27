@@ -113,10 +113,21 @@ fun RateList(
             )
         }
 
+        var localSearchQuery by remember { mutableStateOf(searchQuery) }
+
+        LaunchedEffect(searchQuery) {
+            if (localSearchQuery != searchQuery) {
+                localSearchQuery = searchQuery
+            }
+        }
+
         val clearSearchDesc = stringResource(Res.string.clear_search_description)
         OutlinedTextField(
-            value = searchQuery,
-            onValueChange = onSearchQueryChange,
+            value = localSearchQuery,
+            onValueChange = { newValue ->
+                localSearchQuery = newValue
+                onSearchQueryChange(newValue)
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = Spacing.medium)
@@ -130,9 +141,12 @@ fun RateList(
                 )
             },
             trailingIcon = {
-                if (searchQuery.isNotEmpty()) {
+                if (localSearchQuery.isNotEmpty()) {
                     IconButton(
-                        onClick = { onSearchQueryChange("") },
+                        onClick = {
+                            localSearchQuery = ""
+                            onSearchQueryChange("")
+                        },
                         modifier = Modifier.semantics { contentDescription = clearSearchDesc }
                             .testTag(ExchangeRateTestTags.CLEAR_SEARCH_BUTTON)
                     ) {
