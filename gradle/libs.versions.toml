@@ -1,20 +1,20 @@
 [versions]
-agp = "9.4.0"
+agp = "9.4.1"
 android-compileSdk = "37"
 android-minSdk = "24"
 android-targetSdk = "37"
 androidx-activity = "1.13.0"
 androidx-appcompat = "1.8.0"
-androidx-core = "1.19.0"
+androidx-core = "1.19.1"
 androidx-espresso = "3.7.0"
 androidx-lifecycle = "2.11.0"
 androidx-testExt = "1.3.0"
 androidx-test-core = "1.7.0"
-composeMultiplatform = "1.12.0"
+composeMultiplatform = "1.12.1"
 junit = "4.13.2"
-kotlin = "2.4.10"
+kotlin = "2.4.20"
 material3 = "1.9.0"
-ktor = "3.5.2"
+ktor = "3.6.0"
 koin = "4.2.2"
 voyager = "2.2.21-1.10.3"
 kotlinx-serialization = "1.11.0"
@@ -22,13 +22,14 @@ kotlinx-coroutines = "1.11.0"
 kotlinx-datetime = "0.8.0"
 kotlinx-collections-immutable = "0.5.2"
 kotlinx-atomicfu = "0.33.0"
-androidx-room = "2.8.4"
+androidx-room = "2.8.5"
 multiplatform-settings = "1.3.0"
-sqlite = "2.7.0"
-ksp = "2.3.11"
+sqlite = "2.7.1"
+ksp = "2.3.12"
 kover = "0.9.9"
 detekt = "1.23.8"
-kermit = "2.1.0"
+kermit = "2.2.0"
+robolectric = "4.17"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -52,9 +53,9 @@ compose-icons = { module = "org.jetbrains.compose.material:material-icons-extend
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
 compose-test-common = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "composeMultiplatform" }
-compose-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4-android", version = "1.12.0" }
-compose-test-manifest = { module = "androidx.compose.ui:ui-test-manifest", version = "1.12.0" }
-robolectric = { module = "org.robolectric:robolectric", version = "4.16.1" }
+compose-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4-android", version.ref = "composeMultiplatform" }
+compose-test-manifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "composeMultiplatform" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
