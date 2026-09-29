@@ -1,6 +1,5 @@
 package dev.gustavo.finance.data.repository
 
-import com.russhwolf.settings.ExperimentalSettingsApi
 import com.russhwolf.settings.ObservableSettings
 import com.russhwolf.settings.Settings
 import com.russhwolf.settings.coroutines.getStringFlow
@@ -8,7 +7,6 @@ import com.russhwolf.settings.set
 import dev.gustavo.finance.domain.repository.PreferencesRepository
 import kotlinx.coroutines.flow.Flow
 
-@OptIn(ExperimentalSettingsApi::class)
 class SettingsPreferencesRepository(
     private val settings: Settings
 ) : PreferencesRepository {

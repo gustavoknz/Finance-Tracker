@@ -16,13 +16,15 @@ kotlin {
     applyDefaultHierarchyTemplate()
 
     compilerOptions {
-        freeCompilerArgs.addAll(
-            "-Xexpect-actual-classes",
-            "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
-            "-opt-in=kotlinx.coroutines.FlowPreview",
-            "-opt-in=org.koin.core.annotation.KoinExperimentalAPI",
-            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+        optIn.addAll(
+            "kotlinx.coroutines.ExperimentalCoroutinesApi",
+            "kotlinx.coroutines.FlowPreview",
+            "org.koin.core.annotation.KoinExperimentalAPI",
+            "androidx.compose.material3.ExperimentalMaterial3Api",
+            "com.russhwolf.settings.ExperimentalSettingsApi",
+            "androidx.compose.ui.test.ExperimentalTestApi",
         )
+        freeCompilerArgs.add("-Xexpect-actual-classes")
     }
 
     android {
@@ -132,6 +134,11 @@ kotlin {
 
     sourceSets.all {
         languageSettings.apply {
+            optIn("kotlinx.coroutines.ExperimentalCoroutinesApi")
+            optIn("kotlinx.coroutines.FlowPreview")
+            optIn("org.koin.core.annotation.KoinExperimentalAPI")
+            optIn("androidx.compose.material3.ExperimentalMaterial3Api")
+            optIn("com.russhwolf.settings.ExperimentalSettingsApi")
             if (name.contains("Test")) {
                 optIn("androidx.compose.ui.test.ExperimentalTestApi")
             }
