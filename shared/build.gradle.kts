@@ -17,12 +17,11 @@ kotlin {
 
     compilerOptions {
         optIn.addAll(
+            "androidx.compose.material3.ExperimentalMaterial3Api",
+            "com.russhwolf.settings.ExperimentalSettingsApi",
             "kotlinx.coroutines.ExperimentalCoroutinesApi",
             "kotlinx.coroutines.FlowPreview",
             "org.koin.core.annotation.KoinExperimentalAPI",
-            "androidx.compose.material3.ExperimentalMaterial3Api",
-            "com.russhwolf.settings.ExperimentalSettingsApi",
-            "androidx.compose.ui.test.ExperimentalTestApi",
         )
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
