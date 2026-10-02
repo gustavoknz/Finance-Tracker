@@ -23,7 +23,7 @@ dependencies {
 detekt {
     toolVersion = libs.versions.detekt.get()
     config.setFrom(layout.projectDirectory.file("config/detekt/detekt.yml"))
-    parallel = true
+    parallel = false
     buildUponDefaultConfig = true
     reportsDir = layout.buildDirectory.dir("reports/detekt").get().asFile
 }
