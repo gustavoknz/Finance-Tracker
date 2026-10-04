@@ -139,10 +139,10 @@ class RealExchangeRateRepository(
         onQueryFailed = { logger.e(it) { "Database error for resource: $key" } },
     ).flowOn(dispatchers.io)
 
-    private suspend fun isCacheStale(key: String, ttl: Long): Boolean {
+    private suspend fun isCacheStale(key: String, ttl: Long): Boolean = withContext(dispatchers.io) {
         val lastUpdatedMillis = metadataDao.getLastUpdatedTimestamp(key)
         val currentTimeMillis = Clock.System.now().toEpochMilliseconds()
-        return if (lastUpdatedMillis == null) {
+        if (lastUpdatedMillis == null) {
             true
         } else {
             (currentTimeMillis - lastUpdatedMillis) > ttl

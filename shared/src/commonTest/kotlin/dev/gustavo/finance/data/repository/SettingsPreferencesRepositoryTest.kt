@@ -1,7 +1,9 @@
 package dev.gustavo.finance.data.repository
 
 import com.russhwolf.settings.MapSettings
+import dev.gustavo.finance.util.CoroutineDispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -12,10 +14,17 @@ class SettingsPreferencesRepositoryTest {
     private lateinit var settings: MapSettings
     private lateinit var repository: SettingsPreferencesRepository
 
+    private val testDispatcher = UnconfinedTestDispatcher()
+    private val dispatchers = CoroutineDispatchers(
+        main = testDispatcher,
+        default = testDispatcher,
+        io = testDispatcher,
+    )
+
     @BeforeTest
     fun setUp() {
         settings = MapSettings()
-        repository = SettingsPreferencesRepository(settings)
+        repository = SettingsPreferencesRepository(settings, dispatchers)
     }
 
     @Test
