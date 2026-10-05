@@ -19,6 +19,7 @@ import dev.gustavo.finance.domain.util.DataError
 import dev.gustavo.finance.domain.util.Result
 import dev.gustavo.finance.util.CoroutineDispatchers
 import dev.gustavo.finance.util.MetricsCollector
+import dev.gustavo.finance.util.TimeProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
@@ -27,7 +28,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.time.Clock
 
 class RealExchangeRateRepository(
     private val currencyService: CurrencyService,
@@ -37,6 +37,7 @@ class RealExchangeRateRepository(
     private val pinDao: PinDao,
     private val dispatchers: CoroutineDispatchers,
     private val metricsCollector: MetricsCollector,
+    private val timeProvider: TimeProvider,
 ) : ExchangeRateRepository {
 
     private val logger = Logger.withTag("ExchangeRateRepository")
@@ -59,7 +60,7 @@ class RealExchangeRateRepository(
         repositoryScope.launch {
             try {
                 logger.d { "Running periodic cache cleanup..." }
-                val cleanupTime = Clock.System.now().toEpochMilliseconds() - CLEANUP_THRESHOLD
+                val cleanupTime = timeProvider.currentTimeMillis() - CLEANUP_THRESHOLD
                 exchangeRateDao.deleteOldRates(cleanupTime)
                 currencyDao.deleteOldCurrencies(cleanupTime)
                 logger.d { "Cache cleanup completed." }
@@ -129,7 +130,7 @@ class RealExchangeRateRepository(
             fetch()
         },
         saveFetchResult = { response ->
-            val timestamp = Clock.System.now().toEpochMilliseconds()
+            val timestamp = timeProvider.currentTimeMillis()
             saveFetchResult(response, timestamp)
             metadataDao.insertMetadata(MetadataEntity(key, timestamp))
             logger.d { "Successfully updated database and metadata for resource: $key" }
@@ -141,12 +142,8 @@ class RealExchangeRateRepository(
 
     private suspend fun isCacheStale(key: String, ttl: Long): Boolean = withContext(dispatchers.io) {
         val lastUpdatedMillis = metadataDao.getLastUpdatedTimestamp(key)
-        val currentTimeMillis = Clock.System.now().toEpochMilliseconds()
-        if (lastUpdatedMillis == null) {
-            true
-        } else {
-            (currentTimeMillis - lastUpdatedMillis) > ttl
-        }
+        val currentTimeMillis = timeProvider.currentTimeMillis()
+        lastUpdatedMillis == null || (currentTimeMillis - lastUpdatedMillis) > ttl
     }
 
     override fun getPinnedCurrencies(): Flow<Set<String>> =
@@ -159,7 +156,7 @@ class RealExchangeRateRepository(
 
     override suspend fun togglePin(code: String) = withContext(dispatchers.io) {
         logger.d { "togglePin(code=$code)" }
-        val now = Clock.System.now().toEpochMilliseconds()
+        val now = timeProvider.currentTimeMillis()
         if (pinDao.isPinned(code)) {
             logger.d { "Unpinning $code" }
             pinDao.deletePin(PinEntity(code, localTimestamp = now))
