@@ -38,16 +38,13 @@ class RealExchangeRateRepository(
     private val dispatchers: CoroutineDispatchers,
     private val metricsCollector: MetricsCollector,
     private val timeProvider: TimeProvider,
+    private val cacheConfig: CacheConfig = CacheConfig(),
 ) : ExchangeRateRepository {
 
     private val logger = Logger.withTag("ExchangeRateRepository")
     private val repositoryScope = CoroutineScope(SupervisorJob() + dispatchers.io)
 
     companion object {
-        private const val CURRENCIES_TTL = 24 * 60 * 60 * 1000L // 24 hours
-        private const val RATES_TTL = 30 * 60 * 1000L // 30 minutes
-        private const val CLEANUP_THRESHOLD = 7 * 24 * 60 * 60 * 1000L // 7 days
-
         private const val KEY_CURRENCIES = "currencies"
         private fun ratesKey(base: String) = "rates_$base"
     }
@@ -60,7 +57,7 @@ class RealExchangeRateRepository(
         repositoryScope.launch {
             try {
                 logger.d { "Running periodic cache cleanup..." }
-                val cleanupTime = timeProvider.currentTimeMillis() - CLEANUP_THRESHOLD
+                val cleanupTime = timeProvider.currentTimeMillis() - cacheConfig.cleanupThresholdMillis
                 exchangeRateDao.deleteOldRates(cleanupTime)
                 currencyDao.deleteOldCurrencies(cleanupTime)
                 logger.d { "Cache cleanup completed." }
@@ -74,7 +71,7 @@ class RealExchangeRateRepository(
         val key = ratesKey(base)
         return managedNetworkResource(
             key = key,
-            ttl = RATES_TTL,
+            ttl = cacheConfig.ratesTtlMillis,
             queryOnce = { exchangeRateDao.getRatesByBaseOnce(base).toResponse(base) },
             queryFlow = { exchangeRateDao.getRatesByBase(base).mapNotNull { it.toResponse(base) } },
             fetch = { currencyService.getLatestRates(base) },
@@ -87,7 +84,7 @@ class RealExchangeRateRepository(
     override fun getCurrencies(): Flow<Result<Map<String, String>, DataError.Network>> =
         managedNetworkResource(
             key = KEY_CURRENCIES,
-            ttl = CURRENCIES_TTL,
+            ttl = cacheConfig.currenciesTtlMillis,
             queryOnce = {
                 val cached = currencyDao.getAllCurrenciesOnce()
                 if (cached.isNotEmpty()) cached.toCurrencyMap() else null

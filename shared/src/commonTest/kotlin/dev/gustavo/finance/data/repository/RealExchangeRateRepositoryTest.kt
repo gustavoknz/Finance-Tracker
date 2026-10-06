@@ -38,6 +38,7 @@ class RealExchangeRateRepositoryTest {
         io = testDispatcher,
     )
     private val timeProvider = FakeTimeProvider(1000L)
+    private val cacheConfig = CacheConfig()
 
     @BeforeTest
     fun setUp() {
@@ -56,6 +57,7 @@ class RealExchangeRateRepositoryTest {
             dispatchers,
             metricsCollector,
             timeProvider,
+            cacheConfig,
         )
     }
 
@@ -112,7 +114,7 @@ class RealExchangeRateRepositoryTest {
     fun `cleanupOldData should handle errors gracefully`() = runTest {
         exchangeRateDao.shouldThrow = true
         // Just create a new repository to trigger init block with error
-        RealExchangeRateRepository(service, currencyDao, exchangeRateDao, metadataDao, pinDao, dispatchers, metricsCollector, timeProvider)
+        RealExchangeRateRepository(service, currencyDao, exchangeRateDao, metadataDao, pinDao, dispatchers, metricsCollector, timeProvider, cacheConfig)
         // If it doesn't crash, it's handled (verified by logs in real app)
     }
 
