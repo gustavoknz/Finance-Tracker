@@ -11,6 +11,8 @@ import dev.gustavo.finance.domain.util.Result
 import dev.gustavo.finance.util.CoroutineDispatchers
 import dev.gustavo.finance.util.FakeMetricsCollector
 import dev.gustavo.finance.util.FakeTimeProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
@@ -37,6 +39,7 @@ class RealExchangeRateRepositoryTest {
         default = testDispatcher,
         io = testDispatcher,
     )
+    private val testScope = CoroutineScope(SupervisorJob() + testDispatcher)
     private val timeProvider = FakeTimeProvider(1000L)
     private val cacheConfig = CacheConfig()
 
@@ -58,6 +61,7 @@ class RealExchangeRateRepositoryTest {
             metricsCollector,
             timeProvider,
             cacheConfig,
+            testScope,
         )
     }
 
@@ -114,7 +118,7 @@ class RealExchangeRateRepositoryTest {
     fun `cleanupOldData should handle errors gracefully`() = runTest {
         exchangeRateDao.shouldThrow = true
         // Just create a new repository to trigger init block with error
-        RealExchangeRateRepository(service, currencyDao, exchangeRateDao, metadataDao, pinDao, dispatchers, metricsCollector, timeProvider, cacheConfig)
+        RealExchangeRateRepository(service, currencyDao, exchangeRateDao, metadataDao, pinDao, dispatchers, metricsCollector, timeProvider, cacheConfig, testScope)
         // If it doesn't crash, it's handled (verified by logs in real app)
     }
 

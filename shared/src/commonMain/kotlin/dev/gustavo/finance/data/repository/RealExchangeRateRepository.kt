@@ -39,10 +39,10 @@ class RealExchangeRateRepository(
     private val metricsCollector: MetricsCollector,
     private val timeProvider: TimeProvider,
     private val cacheConfig: CacheConfig = CacheConfig(),
+    private val repositoryScope: CoroutineScope = CoroutineScope(SupervisorJob() + dispatchers.io),
 ) : ExchangeRateRepository {
 
     private val logger = Logger.withTag("ExchangeRateRepository")
-    private val repositoryScope = CoroutineScope(SupervisorJob() + dispatchers.io)
 
     companion object {
         private const val KEY_CURRENCIES = "currencies"
