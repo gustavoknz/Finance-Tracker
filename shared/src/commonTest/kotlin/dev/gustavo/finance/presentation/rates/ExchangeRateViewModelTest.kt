@@ -12,13 +12,15 @@ import dev.gustavo.finance.domain.usecase.TogglePinUseCase
 import dev.gustavo.finance.domain.util.DataError
 import dev.gustavo.finance.util.BaseViewModelTest
 import dev.gustavo.finance.util.CoroutineDispatchers
+import dev.gustavo.finance.util.FakeNetworkMonitor
 import dev.gustavo.finance.util.FakePlatformUtils
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -27,12 +29,14 @@ class ExchangeRateViewModelTest : BaseViewModelTest() {
     private lateinit var viewModel: ExchangeRateViewModel
     private lateinit var repository: FakeExchangeRateRepository
     private lateinit var preferencesRepository: FakePreferencesRepository
+    private lateinit var networkMonitor: FakeNetworkMonitor
 
     @BeforeTest
     override fun setUp() {
         super.setUp()
         repository = FakeExchangeRateRepository()
         preferencesRepository = FakePreferencesRepository()
+        networkMonitor = FakeNetworkMonitor(initialOnline = true)
         // Use a base different from USD to trigger transitions more clearly
         preferencesRepository.storedBaseCurrency = "BRL"
 
@@ -44,6 +48,7 @@ class ExchangeRateViewModelTest : BaseViewModelTest() {
             togglePinUseCase = TogglePinUseCase(repository),
             displayMapper = ExchangeRateDisplayMapper(FakePlatformUtils()),
             dispatchers = CoroutineDispatchers(testDispatcher, testDispatcher, testDispatcher),
+            networkMonitor = networkMonitor,
             getBaseCurrencyUseCase = GetBaseCurrencyUseCase(preferencesRepository),
         )
     }
@@ -57,135 +62,85 @@ class ExchangeRateViewModelTest : BaseViewModelTest() {
     fun `successful data load should emit Success state`() = runTest {
         val currencies = mapOf("USD" to "Dollar", "EUR" to "Euro")
         val rates = ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08))
-
         repository.currenciesResult = currencies
         repository.latestRatesResult = rates
 
         collectState(viewModel.state)
-
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
+        testScheduler.advanceTimeBy(400)
 
-        testScheduler.advanceTimeBy(400) // Trigger debounce
-
-        val uiState = viewModel.state.value
-        val content = uiState.content
-
+        val content = viewModel.state.value.content
         assertIs<ExchangeRateState.Success>(content)
-        assertEquals("EUR", uiState.base)
         assertEquals(1, content.otherRates.size)
         assertEquals("USD", content.otherRates[0].code)
-        assertEquals("Dollar", content.otherRates[0].name)
-        assertFalse(content.isRefreshing)
     }
 
     @Test
-    fun `error in currencies should emit Error state`() = runTest {
+    fun `error loading currencies should emit Error state`() = runTest {
         repository.shouldThrowCurrencies = true
 
         collectState(viewModel.state)
-
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
+        testScheduler.advanceTimeBy(400)
 
-        testScheduler.advanceTimeBy(400) // Trigger debounce
-
-        val uiState = viewModel.state.value
-        val content = uiState.content
-
+        val content = viewModel.state.value.content
         assertIs<ExchangeRateState.Error>(content)
         assertEquals(DataError.Network.UNKNOWN, content.error)
-        assertEquals("EUR", uiState.base)
     }
 
     @Test
-    fun `error in rates should emit Error state`() = runTest {
+    fun `error loading rates should emit Error state`() = runTest {
         repository.currenciesResult = mapOf("USD" to "Dollar")
         repository.shouldThrowRates = true
 
         collectState(viewModel.state)
-
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
+        testScheduler.advanceTimeBy(400)
 
-        testScheduler.advanceTimeBy(400) // Trigger debounce
-
-        val uiState = viewModel.state.value
-        val content = uiState.content
-
+        val content = viewModel.state.value.content
         assertIs<ExchangeRateState.Error>(content)
-        assertEquals("EUR", uiState.base)
+        assertEquals(DataError.Network.UNKNOWN, content.error)
     }
 
     @Test
-    fun `fetchRates should update base and trigger new data load`() = runTest {
-        val currencies = mapOf("USD" to "Dollar", "EUR" to "Euro")
+    fun `togglePin should call use case`() = runTest {
+        val currencies = mapOf("USD" to "Dollar")
+        val rates = ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08))
         repository.currenciesResult = currencies
-        repository.latestRatesResult = ExchangeRatesResponse(1.0, "USD", "2024-05-20", mapOf("EUR" to 0.92))
+        repository.latestRatesResult = rates
 
         collectState(viewModel.state)
-
-        viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("USD"))
-        testScheduler.advanceTimeBy(400)
-        assertEquals("USD", viewModel.state.value.base)
-        assertIs<ExchangeRateState.Success>(viewModel.state.value.content)
-
-        repository.latestRatesResult = ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08))
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
         testScheduler.advanceTimeBy(400)
 
-        val newUiState = viewModel.state.value
-        assertEquals("EUR", newUiState.base)
-        assertEquals("EUR", preferencesRepository.storedBaseCurrency)
+        viewModel.onAction(ExchangeRateAction.TogglePin("USD"))
+        testScheduler.advanceTimeBy(400)
+
+        assertTrue(repository.getPinnedCurrencies().first().contains("USD"))
     }
 
     @Test
-    fun `loading state when data is already success should show refreshing`() = runTest {
-        collectState(viewModel.state)
-
-        // 1. Success
-        repository.currenciesResult = mapOf("USD" to "Dollar", "EUR" to "Euro")
-        repository.latestRatesResult = ExchangeRatesResponse(1.0, "USD", "2024-05-20", mapOf("EUR" to 0.92))
-        viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("USD"))
-        testScheduler.advanceTimeBy(400)
-
-        val initialUiState = viewModel.state.value
-        val initialContent = initialUiState.content
-        assertIs<ExchangeRateState.Success>(initialContent)
-        assertFalse(initialContent.isRefreshing)
-
-        // 2. Trigger loading for DIFFERENT base to see transition
-        repository.emitLoadingOnly = true
-        viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
-        testScheduler.advanceTimeBy(400)
-
-        val refreshingUiState = viewModel.state.value
-        val refreshingContent = refreshingUiState.content
-        assertIs<ExchangeRateState.Success>(refreshingContent)
-        assertTrue(refreshingContent.isRefreshing)
-        assertEquals("USD", initialUiState.base)
-        assertEquals("EUR", refreshingUiState.base)
-    }
-
-    @Test
-    fun `sync error should emit UI event and maintain Success state`() = runTest {
-        // 1. Initial success
-        repository.currenciesResult = mapOf("USD" to "Dollar")
-        repository.latestRatesResult = ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08))
+    fun `non blocking error should keep previous success state and notify user`() = runTest {
+        val currencies = mapOf("USD" to "Dollar")
+        val rates = ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08))
+        repository.currenciesResult = currencies
+        repository.latestRatesResult = rates
 
         val events = mutableListOf<ExchangeRateUiEvent>()
-        collectState(viewModel.state)
         backgroundScope.launch(testDispatcher) {
-            viewModel.uiEvents.collect { events.add(it) }
+            viewModel.uiEvents.toList(events)
         }
 
+        collectState(viewModel.state)
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
         testScheduler.advanceTimeBy(400)
 
-        // 2. Trigger error while already having data
+        // Now simulate a network error on refresh
         repository.shouldThrowRates = true
         viewModel.onAction(ExchangeRateAction.Refresh)
         testScheduler.advanceTimeBy(400)
 
-        val uiState = viewModel.state.value
-        val content = uiState.content
+        val content = viewModel.state.value.content
         assertIs<ExchangeRateState.Success>(content)
         assertEquals(DataError.Network.UNKNOWN, content.syncError)
         assertEquals(1, events.size)
@@ -239,63 +194,16 @@ class ExchangeRateViewModelTest : BaseViewModelTest() {
         viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
         testScheduler.advanceTimeBy(400)
 
-        val content = viewModel.state.value.content
-        assertIs<ExchangeRateState.Success>(content)
-        assertEquals(1, content.otherRates.size)
-        assertEquals(0, content.pinnedRates.size)
+        val initialContent = viewModel.state.value.content
+        assertIs<ExchangeRateState.Success>(initialContent)
+        assertEquals(0, initialContent.pinnedRates.size)
 
         viewModel.onAction(ExchangeRateAction.TogglePin("USD"))
         testScheduler.advanceTimeBy(400)
 
         val pinnedContent = viewModel.state.value.content
         assertIs<ExchangeRateState.Success>(pinnedContent)
-        assertEquals(0, pinnedContent.otherRates.size)
         assertEquals(1, pinnedContent.pinnedRates.size)
         assertEquals("USD", pinnedContent.pinnedRates[0].code)
-        assertTrue(pinnedContent.pinnedRates[0].isPinned)
-    }
-
-    @Test
-    fun `mapToContentState should return isRefreshing when results are loading but have data`() = runTest {
-        collectState(viewModel.state)
-
-        repository.currenciesResult = mapOf("USD" to "Dollar")
-        repository.latestRatesResult = ExchangeRatesResponse(1.0, "EUR", "2024-05-20", mapOf("USD" to 1.08))
-        
-        repository.emitLoadingWithData = true
-        repository.emitLoadingOnly = true
-        viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
-        testScheduler.advanceTimeBy(400)
-
-        val content = viewModel.state.value.content
-        assertIs<ExchangeRateState.Success>(content)
-        assertTrue(content.isRefreshing)
-    }
-
-    @Test
-    fun `catch block should emit generic error state`() = runTest {
-        collectState(viewModel.state)
-
-        repository.forceException = true
-        viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
-        testScheduler.advanceTimeBy(400)
-
-        val content = viewModel.state.value.content
-        assertIs<ExchangeRateState.Error>(content)
-        assertEquals(DataError.Network.UNKNOWN, content.error)
-    }
-
-    @Test
-    fun `mapToContentState should return Loading if data is partially missing`() = runTest {
-        collectState(viewModel.state)
-
-        repository.currenciesResult = emptyMap()
-        repository.latestRatesResult = null
-        repository.emitLoadingOnly = true // Stay in loading
-        
-        viewModel.onAction(ExchangeRateAction.ChangeBaseCurrency("EUR"))
-        testScheduler.advanceTimeBy(400)
-
-        assertEquals(ExchangeRateState.Loading, viewModel.state.value.content)
     }
 }

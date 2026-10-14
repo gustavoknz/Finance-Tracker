@@ -14,6 +14,7 @@ import dev.gustavo.finance.domain.util.DataError
 import dev.gustavo.finance.domain.util.Result
 import dev.gustavo.finance.domain.util.getOrNull
 import dev.gustavo.finance.util.CoroutineDispatchers
+import dev.gustavo.finance.util.NetworkMonitor
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.Flow
@@ -71,6 +72,7 @@ class ExchangeRateViewModel(
     private val togglePinUseCase: TogglePinUseCase,
     private val displayMapper: ExchangeRateDisplayMapper,
     private val dispatchers: CoroutineDispatchers,
+    private val networkMonitor: NetworkMonitor,
     getBaseCurrencyUseCase: GetBaseCurrencyUseCase,
 ) : ViewModel() {
 
@@ -78,7 +80,7 @@ class ExchangeRateViewModel(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.Eagerly,
-            initialValue = "EUR" // Fallback initial value
+            initialValue = "EUR", // Fallback initial value
         )
 
     private val _refreshTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
@@ -87,9 +89,21 @@ class ExchangeRateViewModel(
     private val _uiEvents = MutableSharedFlow<ExchangeRateUiEvent>()
     val uiEvents = _uiEvents.asSharedFlow()
 
+    init {
+        viewModelScope.launch {
+            networkMonitor.isOnline
+                .distinctUntilChanged()
+                .collect { isOnline ->
+                    if (isOnline) {
+                        _refreshTrigger.emit(Unit)
+                    }
+                }
+        }
+    }
+
     private val contentState: Flow<ExchangeRateState> = combine(
         currentBase,
-        _refreshTrigger.onStart { emit(Unit) }
+        _refreshTrigger.onStart { emit(Unit) },
     ) { base, _ -> base }
         .flatMapLatest { base ->
             combine(
@@ -136,7 +150,7 @@ class ExchangeRateViewModel(
                     otherRates = content.otherRates.filter {
                         it.code.contains(debouncedQuery, ignoreCase = true) ||
                                 it.name.contains(debouncedQuery, ignoreCase = true)
-                    }.toImmutableList()
+                    }.toImmutableList(),
                 )
             }
         } else {
