@@ -21,3 +21,7 @@
 
 # Koin rules
 -keep class org.koin.** { *; }
+
+# EncryptedSharedPreferences / Tink rules
+-dontwarn com.google.errorprone.annotations.**
+-dontwarn com.google.crypto.tink.**

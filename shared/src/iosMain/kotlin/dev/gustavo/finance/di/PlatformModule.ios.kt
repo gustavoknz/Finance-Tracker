@@ -1,5 +1,7 @@
 package dev.gustavo.finance.di
 
+import com.russhwolf.settings.Settings
+import dev.gustavo.finance.data.local.createEncryptedSettings
 import dev.gustavo.finance.data.local.getIosDatabaseBuilder
 import dev.gustavo.finance.util.AppConfig
 import dev.gustavo.finance.util.IosAppConfig
@@ -14,4 +16,5 @@ actual val platformModule = module {
     single<PlatformUtils> { IosPlatformUtils() }
     single<AppConfig> { IosAppConfig() }
     single<NetworkMonitor> { IosNetworkMonitor() }
+    single<Settings> { createEncryptedSettings() }
 }

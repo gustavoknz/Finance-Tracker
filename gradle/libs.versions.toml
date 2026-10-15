@@ -24,6 +24,7 @@ kotlinx-collections-immutable = "0.5.2"
 kotlinx-atomicfu = "0.33.0"
 androidx-room = "2.8.5"
 multiplatform-settings = "1.3.0"
+androidx-security-crypto = "1.1.0"
 sqlite = "2.7.1"
 ksp = "2.3.12"
 kover = "0.9.11"
@@ -81,6 +82,7 @@ sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sql
 multiplatform-settings = { module = "com.russhwolf:multiplatform-settings-no-arg", version.ref = "multiplatform-settings" }
 multiplatform-settings-coroutines = { module = "com.russhwolf:multiplatform-settings-coroutines", version.ref = "multiplatform-settings" }
 multiplatform-settings-test = { module = "com.russhwolf:multiplatform-settings-test", version.ref = "multiplatform-settings" }
+androidxSecurityCrypto = { module = "androidx.security:security-crypto", version.ref = "androidx-security-crypto" }
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 
 [plugins]

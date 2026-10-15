@@ -1,5 +1,7 @@
 package dev.gustavo.finance.di
 
+import com.russhwolf.settings.Settings
+import dev.gustavo.finance.data.local.createEncryptedSettings
 import dev.gustavo.finance.data.local.getAndroidDatabaseBuilder
 import dev.gustavo.finance.util.AndroidAppConfig
 import dev.gustavo.finance.util.AndroidNetworkMonitor
@@ -15,4 +17,5 @@ actual val platformModule = module {
     single<PlatformUtils> { AndroidPlatformUtils() }
     single<AppConfig> { AndroidAppConfig() }
     single<NetworkMonitor> { AndroidNetworkMonitor(androidContext()) }
+    single<Settings> { createEncryptedSettings(androidContext()) }
 }
